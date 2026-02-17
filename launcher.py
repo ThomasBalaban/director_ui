@@ -13,13 +13,13 @@ import sys
 import os
 import time
 import threading
-import httpx
+import httpx # type: ignore
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException # type: ignore
+from fastapi.middleware.cors import CORSMiddleware # type: ignore
 from collections import deque
 from typing import Optional, Dict, Any
-import uvicorn
+import uvicorn # type: ignore
 
 UI_DIR      = os.path.dirname(os.path.abspath(__file__))
 PARENT_DIR  = os.path.dirname(UI_DIR)
