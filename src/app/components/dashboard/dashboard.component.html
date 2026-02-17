@@ -1,0 +1,97 @@
+<div class="dashboard-container">
+  <!-- Header -->
+  <app-header
+    [mood]="directorState?.mood || 'Neutral'"
+    [conversationState]="directorState?.conversation_state || 'IDLE'"
+    [isConnected]="isConnected"
+    [streamers]="streamers"
+    [selectedStreamer]="selectedStreamer"
+    [manualContext]="manualContext"
+    [streamerLocked]="streamerLocked"
+    [contextLocked]="contextLocked"
+    [pendingAiContext]="pendingAiContext"
+    (streamerChange)="onStreamerChange($event)"
+    (contextSubmit)="onContextSubmit($event)"
+    (streamerLockToggle)="onStreamerLockToggle()"
+    (contextLockToggle)="onContextLockToggle()"
+    (acceptAiSuggestion)="onAcceptAiSuggestion()"
+  ></app-header>
+
+  <!-- Main Grid -->
+  <div class="main-grid">
+    <!-- Column 1: Directives, Summary, Graph -->
+    <div class="column">
+      <app-directives-panel
+        [directive]="directorState?.directive || null"
+      ></app-directives-panel>
+      
+      <app-summary-panel
+        [summary]="directorState?.summary || 'Waiting for summary...'"
+        [rawContext]="directorState?.raw_context || ''"
+      ></app-summary-panel>
+      
+      <app-interest-graph
+        [scoreHistory]="scoreHistory"
+      ></app-interest-graph>
+    </div>
+    
+    <!-- Column 2: Context Panels (Vision, Speech, Audio) -->
+    <div class="column">
+      <app-context-panel
+        title="👁️ Vision (12s)"
+        [logs]="visionLog"
+      ></app-context-panel>
+      
+      <app-context-panel
+        title="🎤 Speech (30s)"
+        [logs]="spokenLog"
+      ></app-context-panel>
+      
+      <app-context-panel
+        title="🔊 Audio (12s)"
+        [audioLogs]="audioLog"
+        [isAudioPanel]="true"
+      ></app-context-panel>
+    </div>
+    
+    <!-- Column 3: Chat -->
+    <div class="column">
+      <app-chat-panel
+        title="💬 Chat"
+        [messages]="chatMessages"
+      ></app-chat-panel>
+      
+      <app-chat-panel
+        title="🤖 Nami's Brain"
+        [namiReplies]="namiReplies"
+        [isNamiPanel]="true"
+        (openDrawer)="onOpenDrawer($event)"
+      ></app-chat-panel>
+    </div>
+    
+    <!-- Column 4: Metrics, User, Memory -->
+    <div class="column">
+      <app-metrics-panel
+        [adaptive]="directorState?.adaptive || null"
+        [flow]="directorState?.flow || 'Unknown'"
+        [intent]="directorState?.intent || 'Unknown'"
+        [prediction]="directorState?.prediction || 'Observing flow...'"
+      ></app-metrics-panel>
+      
+      <app-user-panel
+        [user]="directorState?.active_user || null"
+      ></app-user-panel>
+      
+      <app-memory-panel
+        [memories]="directorState?.memories || []"
+      ></app-memory-panel>
+    </div>
+  </div>
+</div>
+
+<!-- Context Drawer Overlay -->
+<app-context-drawer
+  [isOpen]="drawerOpen"
+  [data]="drawerData"
+  (close)="onCloseDrawer()"
+></app-context-drawer>

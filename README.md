@@ -1,59 +1,95 @@
-# DirectorUi
+# Director UI
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.19.
+Angular-based dashboard for the Nami Director Engine.
 
-## Development server
+## Architecture
 
-To start a local development server, run:
+This is a standalone Angular application that connects to the Director Engine backend via:
+- **Socket.IO** - Real-time event streaming
+- **REST API** - HTTP endpoints for data fetching
 
-```bash
-ng serve
-```
+## Prerequisites
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- Node.js 18+
+- npm 9+
+- Director Engine running on `localhost:8002`
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Setup
 
 ```bash
-ng generate --help
+# Install dependencies
+npm install
+
+# Start development server
+npm start
 ```
 
-## Building
+The UI will be available at `http://localhost:4200`
 
-To build the project run:
+## Configuration
+
+Edit `src/environments/environment.ts` to change the backend URL:
+
+```typescript
+export const environment = {
+  production: false,
+  directorEngineUrl: 'http://localhost:8002',
+  socketUrl: 'http://localhost:8002'
+};
+```
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── components/          # UI Components
+│   │   ├── dashboard/       # Main orchestrator
+│   │   ├── header/          # Top bar with controls
+│   │   ├── directives-panel/
+│   │   ├── summary-panel/
+│   │   ├── interest-graph/  # Chart.js graph
+│   │   ├── context-panel/   # Vision/Speech/Audio
+│   │   ├── chat-panel/      # Twitch chat & Nami
+│   │   ├── metrics-panel/   # Brain metrics
+│   │   ├── user-panel/      # Active user info
+│   │   ├── memory-panel/    # Memory display
+│   │   └── context-drawer/  # Prompt details
+│   ├── models/              # TypeScript interfaces
+│   └── services/            # Director Service (Socket.IO)
+├── environments/            # Environment configs
+└── styles.css               # Global styles
+```
+
+## Key Features
+
+- **Real-time updates** via Socket.IO
+- **Reactive state management** using RxJS BehaviorSubjects
+- **Standalone components** (Angular 17+)
+- **Responsive grid layout** for dashboard
+- **Interactive charts** with Chart.js
+
+## Development
 
 ```bash
-ng build
+# Run with hot reload
+npm start
+
+# Build for production
+npm run build
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## Backend Communication
 
-## Running unit tests
+The `DirectorService` handles all backend communication:
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+```typescript
+// Subscribe to real-time updates
+this.directorService.directorState$.subscribe(state => {
+  // Handle state updates
+});
 
-```bash
-ng test
+// Send commands
+this.directorService.setManualContext('Playing Phasmophobia');
+this.directorService.setStreamer('peepingotter');
 ```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
