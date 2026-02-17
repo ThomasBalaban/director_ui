@@ -1,0 +1,11 @@
+{
+  "/socket.io": {
+    "target": "http://localhost:8002",
+    "ws": true,
+    "secure": false
+  },
+  "/api": {
+    "target": "http://localhost:8002",
+    "secure": false
+  }
+}
