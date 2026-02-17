@@ -4,8 +4,10 @@
     "ws": true,
     "secure": false
   },
-  "/api": {
-    "target": "http://localhost:8002",
-    "secure": false
-  }
+  "/breadcrumbs": { "target": "http://localhost:8002", "secure": false },
+  "/summary_data": { "target": "http://localhost:8002", "secure": false },
+  "/thread_stats": { "target": "http://localhost:8002", "secure": false },
+  "/prompt_debug": { "target": "http://localhost:8002", "secure": false },
+  "/prompt_size": { "target": "http://localhost:8002", "secure": false },
+  "/health": { "target": "http://localhost:8002", "secure": false }
 }
