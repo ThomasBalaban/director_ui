@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --port 4200 --open",
+    "start": "concurrently --kill-others-on-fail --names \"ng,launcher\" --prefix-colors \"cyan,magenta\" \"ng serve --port 4200\" \"python launcher.py\" \"sleep 4 && open -a Firefox http://localhost:4200\"",
+    "start:ui": "ng serve --port 4200 --open",
+    "start:launcher": "python launcher.py",
     "build": "ng build",
     "watch": "ng build --watch --configuration development"
   },
@@ -29,6 +31,7 @@
     "@angular/compiler-cli": "^19.0.0",
     "@tailwindcss/vite": "^4.1.18",
     "@types/node": "^20.0.0",
+    "concurrently": "^9.0.0",
     "tailwindcss": "^4.1.18",
     "typescript": "~5.6.0"
   }

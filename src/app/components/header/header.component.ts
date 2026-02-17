@@ -1,22 +1,30 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Streamer } from '../../models/director.models';
+import { NamiStatusComponent } from '../nami-status/nami-status.component';
+import { ServiceStatusBarComponent } from '../service-status-bar/service-status-bar.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NamiStatusComponent, ServiceStatusBarComponent],
   template: `
     <header class="header">
       <div class="header-top">
         <h1 class="title">
-          Director Engine 
+          Director Engine
           <span class="subtitle">| Context Monitor</span>
           <span class="connection-dot" [class.connected]="isConnected"></span>
         </h1>
-        
+
         <div class="pills">
+          <!-- All-services health dots (links to /services) -->
+          <app-service-status-bar></app-service-status-bar>
+
+          <!-- Nami gate status -->
+          <app-nami-status></app-nami-status>
+
           <div class="pill state-pill" [ngClass]="getStateClass()">
             <span>🗣️</span>
             <span>{{ conversationState }}</span>
@@ -27,12 +35,12 @@ import { Streamer } from '../../models/director.models';
           </div>
         </div>
       </div>
-      
+
       <div class="controls-bar">
         <!-- Streamer Select -->
         <div class="control-group">
-          <button 
-            class="lock-btn" 
+          <button
+            class="lock-btn"
             [class.locked]="streamerLocked"
             (click)="streamerLockToggle.emit()"
             title="Lock/Unlock AI auto-fill"
@@ -40,18 +48,18 @@ import { Streamer } from '../../models/director.models';
             {{ streamerLocked ? '🔒' : '🔓' }}
           </button>
           <label>📺 Watching:</label>
-          <select 
+          <select
             [ngModel]="selectedStreamer"
             (ngModelChange)="streamerChange.emit($event)"
           >
             <option *ngFor="let s of streamers" [value]="s.id">{{ s.display_name }}</option>
           </select>
         </div>
-        
+
         <!-- Context Input -->
         <div class="control-group flex-1">
-          <button 
-            class="lock-btn" 
+          <button
+            class="lock-btn"
             [class.locked]="contextLocked"
             (click)="contextLockToggle.emit()"
             title="Lock/Unlock AI auto-fill"
@@ -73,7 +81,7 @@ import { Streamer } from '../../models/director.models';
           </span>
           <button class="submit-btn" (click)="submitContext()">Set</button>
         </div>
-        
+
         <!-- AI Suggestion -->
         <div class="ai-suggestion" *ngIf="pendingAiContext">
           <span class="ai-label">🤖 AI:</span>
@@ -88,14 +96,14 @@ import { Streamer } from '../../models/director.models';
       margin-bottom: 1rem;
       flex-shrink: 0;
     }
-    
+
     .header-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 0.75rem;
     }
-    
+
     .title {
       font-size: 1.875rem;
       font-weight: bold;
@@ -104,13 +112,13 @@ import { Streamer } from '../../models/director.models';
       align-items: center;
       gap: 0.5rem;
     }
-    
+
     .subtitle {
       font-size: 0.875rem;
       font-weight: 500;
       color: #9ca3af;
     }
-    
+
     .connection-dot {
       width: 10px;
       height: 10px;
@@ -118,16 +126,17 @@ import { Streamer } from '../../models/director.models';
       background: #ef4444;
       margin-left: 0.5rem;
     }
-    
+
     .connection-dot.connected {
       background: #22c55e;
     }
-    
+
     .pills {
       display: flex;
       gap: 0.75rem;
+      align-items: center;
     }
-    
+
     .pill {
       padding: 0.5rem 1rem;
       border: 2px solid;
@@ -138,38 +147,38 @@ import { Streamer } from '../../models/director.models';
       align-items: center;
       gap: 0.5rem;
     }
-    
+
     .state-pill {
       border-color: #4b5563;
       background: #1f2937;
       color: #9ca3af;
     }
-    
+
     .state-pill.frustrated {
       border-color: #dc2626;
       background: #7f1d1d;
       color: #fecaca;
     }
-    
+
     .state-pill.celebratory {
       border-color: #eab308;
       background: #713f12;
       color: #fef08a;
     }
-    
+
     .state-pill.engaged {
       border-color: #3b82f6;
       background: #1e3a8a;
       color: #bfdbfe;
     }
-    
+
     .mood-Neutral { color: #63e2b7; border-color: #63e2b7; }
-    .mood-Happy { color: #FCD34D; border-color: #FCD34D; }
+    .mood-Happy   { color: #FCD34D; border-color: #FCD34D; }
     .mood-Annoyed { color: #F87171; border-color: #F87171; }
-    .mood-Scared { color: #A78BFA; border-color: #A78BFA; }
-    .mood-Horny { color: #F472B6; border-color: #F472B6; }
-    .mood-Tired { color: #9CA3AF; border-color: #9CA3AF; }
-    
+    .mood-Scared  { color: #A78BFA; border-color: #A78BFA; }
+    .mood-Horny   { color: #F472B6; border-color: #F472B6; }
+    .mood-Tired   { color: #9CA3AF; border-color: #9CA3AF; }
+
     .controls-bar {
       display: flex;
       gap: 1rem;
@@ -179,23 +188,23 @@ import { Streamer } from '../../models/director.models';
       border-radius: 0.5rem;
       padding: 0.75rem;
     }
-    
+
     .control-group {
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
-    
+
     .control-group.flex-1 {
       flex: 1;
     }
-    
+
     .control-group label {
       font-size: 0.875rem;
       color: #9ca3af;
       white-space: nowrap;
     }
-    
+
     .control-group select,
     .context-input {
       background: #1a1a1a;
@@ -205,28 +214,28 @@ import { Streamer } from '../../models/director.models';
       color: white;
       font-size: 0.875rem;
     }
-    
+
     .context-input {
       flex: 1;
     }
-    
+
     .context-input:focus,
     .control-group select:focus {
       outline: none;
       border-color: #a855f7;
     }
-    
+
     .char-count {
       font-size: 0.75rem;
       color: #6b7280;
       width: 3rem;
       text-align: right;
     }
-    
+
     .char-count.at-limit {
       color: #f87171;
     }
-    
+
     .lock-btn {
       width: 32px;
       height: 32px;
@@ -240,18 +249,18 @@ import { Streamer } from '../../models/director.models';
       font-size: 14px;
       transition: all 0.2s ease;
     }
-    
+
     .lock-btn:hover {
       background: #2a2a2a;
       border-color: #777;
     }
-    
+
     .lock-btn.locked {
       background: rgba(239, 68, 68, 0.2);
       border-color: #ef4444;
       box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
     }
-    
+
     .submit-btn {
       background: #7c3aed;
       color: white;
@@ -263,11 +272,11 @@ import { Streamer } from '../../models/director.models';
       cursor: pointer;
       transition: background 0.2s;
     }
-    
+
     .submit-btn:hover {
       background: #6d28d9;
     }
-    
+
     .ai-suggestion {
       display: flex;
       align-items: center;
@@ -278,11 +287,9 @@ import { Streamer } from '../../models/director.models';
       padding: 0.25rem 0.5rem;
       font-size: 0.75rem;
     }
-    
-    .ai-label {
-      color: #a78bfa;
-    }
-    
+
+    .ai-label { color: #a78bfa; }
+
     .ai-text {
       color: #c4b5fd;
       max-width: 200px;
@@ -290,7 +297,7 @@ import { Streamer } from '../../models/director.models';
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    
+
     .accept-btn {
       background: rgba(124, 58, 237, 0.5);
       color: white;
@@ -301,13 +308,13 @@ import { Streamer } from '../../models/director.models';
       cursor: pointer;
       transition: background 0.2s;
     }
-    
+
     .accept-btn:hover {
       background: #7c3aed;
     }
   `]
 })
-export class HeaderComponent {
+export class HeaderComponent implements OnInit, OnChanges {
   @Input() mood = 'Neutral';
   @Input() conversationState = 'IDLE';
   @Input() isConnected = false;
@@ -317,32 +324,32 @@ export class HeaderComponent {
   @Input() streamerLocked = false;
   @Input() contextLocked = false;
   @Input() pendingAiContext: string | null = null;
-  
+
   @Output() streamerChange = new EventEmitter<string>();
   @Output() contextSubmit = new EventEmitter<string>();
   @Output() streamerLockToggle = new EventEmitter<void>();
   @Output() contextLockToggle = new EventEmitter<void>();
   @Output() acceptAiSuggestion = new EventEmitter<void>();
-  
+
   contextValue = '';
-  
+
   ngOnInit() {
     this.contextValue = this.manualContext;
   }
-  
+
   ngOnChanges() {
     this.contextValue = this.manualContext;
   }
-  
+
   getStateClass(): string {
     switch (this.conversationState) {
-      case 'FRUSTRATED': return 'frustrated';
+      case 'FRUSTRATED':  return 'frustrated';
       case 'CELEBRATORY': return 'celebratory';
-      case 'ENGAGED': return 'engaged';
-      default: return '';
+      case 'ENGAGED':     return 'engaged';
+      default:            return '';
     }
   }
-  
+
   submitContext(): void {
     this.contextSubmit.emit(this.contextValue);
   }
