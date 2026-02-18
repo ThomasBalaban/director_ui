@@ -1,9 +1,9 @@
-import { Component, OnInit, OnDestroy, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { PollingComponent } from '../../shared/polling.component';
 import { ServiceStatus } from '../../shared/interfaces/director.interfaces';
 
-// Shown when the launcher itself is unreachable
 const FALLBACK_SERVICES: ServiceStatus[] = [
   { id: 'prompt_service',  label: 'Prompt',   port: 8001, managed: true,  status: 'unknown' },
   { id: 'desktop_monitor', label: 'Desktop',  port: 8003, managed: true,  status: 'unknown' },
@@ -118,16 +118,13 @@ const FALLBACK_SERVICES: ServiceStatus[] = [
     .status-bar:hover .manage-hint { color: var(--text-muted); }
   `]
 })
-export class ServiceStatusBarComponent implements OnInit, OnDestroy {
+export class ServiceStatusBarComponent extends PollingComponent {
+  protected override pollingInterval = 3000;
+
   services       = signal<ServiceStatus[]>(FALLBACK_SERVICES);
   launcherOnline = signal(false);
 
-  private interval?: ReturnType<typeof setInterval>;
-
-  ngOnInit()  { this.poll(); this.interval = setInterval(() => this.poll(), 3000); }
-  ngOnDestroy() { if (this.interval) clearInterval(this.interval); }
-
-  private async poll() {
+  override async poll() {
     try {
       const res = await fetch('/launcher/services');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

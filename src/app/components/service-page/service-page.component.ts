@@ -1,7 +1,8 @@
-import { Component, OnInit, OnDestroy, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { ServiceStatus } from '../../shared/interfaces/director.interfaces';
+import { PollingComponent } from '../../shared/polling.component';
+import { ServiceStatus  } from '../../shared/interfaces/director.interfaces';
 
 interface ServiceDetail extends ServiceStatus {
   description: string;
@@ -118,17 +119,17 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
                   </div>
                 } @else {
                   @if (svc.status === 'offline' || svc.status === 'unhealthy') {
-                    <button class="btn btn-start" [disabled]="svc.actionPending || !launcherOnline()" (click)="startService(svc)">
+                    <button class="btn btn-start" [disabled]="svc.actionPending || !launcherOnline()" (click)="serviceAction(svc, 'start')">
                       {{ svc.actionPending ? 'Starting...' : '▶ Start' }}
                     </button>
                   }
                   @if (svc.status === 'online' || svc.status === 'unhealthy') {
-                    <button class="btn btn-stop" [disabled]="svc.actionPending || !launcherOnline()" (click)="stopService(svc)">
+                    <button class="btn btn-stop" [disabled]="svc.actionPending || !launcherOnline()" (click)="serviceAction(svc, 'stop')">
                       {{ svc.actionPending ? 'Stopping...' : '■ Stop' }}
                     </button>
                   }
                   @if (svc.status === 'online') {
-                    <button class="btn btn-restart" [disabled]="svc.actionPending || !launcherOnline()" (click)="restartService(svc)">
+                    <button class="btn btn-restart" [disabled]="svc.actionPending || !launcherOnline()" (click)="serviceAction(svc, 'restart')">
                       {{ svc.actionPending ? 'Restarting...' : '↺ Restart' }}
                     </button>
                   }
@@ -340,16 +341,13 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
     .log-empty { color: #374151; font-style: italic; }
   `]
 })
-export class ServicesPageComponent implements OnInit, OnDestroy {
+export class ServicesPageComponent extends PollingComponent {
+  protected override pollingInterval = 4000;
+
   services       = signal<ServiceDetail[]>([]);
   launcherOnline = signal(false);
   loading        = signal(false);
   lastUpdated    = signal('—');
-
-  private interval?: ReturnType<typeof setInterval>;
-
-  ngOnInit()    { this.poll(); this.interval = setInterval(() => this.poll(), 4000); }
-  ngOnDestroy() { if (this.interval) clearInterval(this.interval); }
 
   statusMeta(status: string) { return STATUS_META[status] ?? STATUS_META['unknown']; }
   isGui(id: string): boolean { return GUI_SERVICES.has(id); }
@@ -358,7 +356,7 @@ export class ServicesPageComponent implements OnInit, OnDestroy {
   isWarnLine(line: string):  boolean { return /warn|warning|⚠/i.test(line); }
   isOkLine(line: string):    boolean { return /✅|healthy|ready|started|online|running/i.test(line); }
 
-  async poll() {
+  override async poll() {
     this.loading.set(true);
     try {
       const res = await fetch('/launcher/services');
@@ -384,29 +382,16 @@ export class ServicesPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  async startService(svc: ServiceDetail) {
+  async serviceAction(svc: ServiceDetail, action: 'start' | 'stop' | 'restart') {
     this.setActionPending(svc.id, true);
     try {
-      await fetch(`/launcher/services/${svc.id}/start`, { method: 'POST' });
+      await fetch(`/launcher/services/${svc.id}/${action}`, { method: 'POST' });
       await this.poll();
-      setTimeout(() => this.poll(), 2000);
-      setTimeout(() => this.poll(), 5000);
-    } finally { this.setActionPending(svc.id, false); }
-  }
-
-  async stopService(svc: ServiceDetail) {
-    this.setActionPending(svc.id, true);
-    try { await fetch(`/launcher/services/${svc.id}/stop`, { method: 'POST' }); await this.poll(); }
-    finally { this.setActionPending(svc.id, false); }
-  }
-
-  async restartService(svc: ServiceDetail) {
-    this.setActionPending(svc.id, true);
-    try {
-      await fetch(`/launcher/services/${svc.id}/restart`, { method: 'POST' });
-      await this.poll();
-      setTimeout(() => this.poll(), 3000);
-    } finally { this.setActionPending(svc.id, false); }
+      if (action !== 'stop') setTimeout(() => this.poll(), action === 'restart' ? 3000 : 2000);
+      if (action === 'start') setTimeout(() => this.poll(), 5000);
+    } finally {
+      this.setActionPending(svc.id, false);
+    }
   }
 
   async toggleLogs(svc: ServiceDetail) {

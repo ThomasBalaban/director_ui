@@ -1,5 +1,6 @@
-import { Component, OnInit, OnDestroy, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PollingComponent } from '../../shared/polling.component';
 
 interface PromptSection {
   role: string;
@@ -48,7 +49,7 @@ interface PromptSection {
         </div>
       }
 
-      <button class="refresh-btn" (click)="load()" [disabled]="loading()">
+      <button class="refresh-btn" (click)="poll()" [disabled]="loading()">
         ↻ Refresh
       </button>
     </div>
@@ -175,22 +176,13 @@ interface PromptSection {
     .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   `]
 })
-export class PromptDebugComponent implements OnInit, OnDestroy {
+export class PromptDebugComponent extends PollingComponent {
+  protected override pollingInterval = 5000;
+
   loading = signal(false);
   error = signal<string | null>(null);
   messages = signal<PromptSection[]>([]);
   promptSize = signal<{ current_tokens: number; max_tokens: number } | null>(null);
-
-  private interval?: ReturnType<typeof setInterval>;
-
-  ngOnInit() {
-    this.load();
-    this.interval = setInterval(() => this.load(), 5000);
-  }
-
-  ngOnDestroy() {
-    if (this.interval) clearInterval(this.interval);
-  }
 
   sizePercent(): number {
     const s = this.promptSize();
@@ -198,7 +190,7 @@ export class PromptDebugComponent implements OnInit, OnDestroy {
     return (s.current_tokens / s.max_tokens) * 100;
   }
 
-  async load() {
+  override async poll() {
     this.loading.set(true);
     this.error.set(null);
     try {
@@ -209,7 +201,6 @@ export class PromptDebugComponent implements OnInit, OnDestroy {
 
       if (debugRes.ok) {
         const data = await debugRes.json();
-        // Handle both array response and {messages: [...]} shape
         this.messages.set(Array.isArray(data) ? data : (data.messages ?? []));
       }
 

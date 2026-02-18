@@ -34,7 +34,7 @@ import { UserProfile } from '../../models/director.models';
             </div>
           </div>
 
-          <div class="facts" *ngIf="user.facts?.length">
+          <div class="facts" *ngIf="user.facts.length">
             <strong>Known Facts:</strong>
             <ul>
               <li *ngFor="let fact of user.facts.slice(-3)">{{ fact.content }}</li>

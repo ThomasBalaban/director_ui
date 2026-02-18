@@ -10,7 +10,7 @@ import { Memory } from '../../models/director.models';
     <div class="panel">
       <h2 class="panel-title">💾 Memories</h2>
       <div class="panel-content">
-        <ul *ngIf="memories?.length" class="memory-list">
+        <ul *ngIf="memories.length" class="memory-list">
           <li *ngFor="let mem of memories" class="memory-item">
             <div class="memory-header">
               <span class="memory-source">{{ mem.source }}</span>
@@ -20,7 +20,7 @@ import { Memory } from '../../models/director.models';
           </li>
         </ul>
 
-        <p *ngIf="!memories?.length" class="empty">No high-impact memories yet.</p>
+        <p *ngIf="!memories.length" class="empty">No high-impact memories yet.</p>
       </div>
     </div>
   `,

@@ -21,7 +21,7 @@ import { BotReply } from '../../models/director.models';
             <span class="username" [class.nami]="msg.isNami">{{ msg.username }}:</span>
             <span [innerHTML]="highlightMentions(msg.message)"></span>
           </div>
-          <div *ngIf="!messages?.length" class="empty">No messages yet...</div>
+          <div *ngIf="!messages.length" class="empty">No messages yet...</div>
         </ng-container>
 
         <ng-container *ngIf="isNamiPanel">
@@ -37,7 +37,7 @@ import { BotReply } from '../../models/director.models';
             </span>
             <span class="context-hint">📄 Context</span>
           </div>
-          <div *ngIf="!namiReplies?.length" class="empty">No replies yet...</div>
+          <div *ngIf="!namiReplies.length" class="empty">No replies yet...</div>
         </ng-container>
 
       </div>

@@ -23,7 +23,7 @@ import { CommonModule } from '@angular/common';
           >
             {{ audio.text }}
           </div>
-          <div *ngIf="!audioLogs?.length" class="empty">Waiting...</div>
+          <div *ngIf="!audioLogs.length" class="empty">Waiting...</div>
         </ng-container>
 
       </div>

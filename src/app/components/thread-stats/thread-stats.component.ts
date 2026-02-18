@@ -1,5 +1,6 @@
-import { Component, OnInit, OnDestroy, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PollingComponent } from '../../shared/polling.component';
 
 interface ThreadStats {
   [key: string]: unknown;
@@ -19,7 +20,7 @@ interface ThreadStats {
         <pre class="stats-json">{{ stats() | json }}</pre>
       }
 
-      <button class="refresh-btn" (click)="load()" [disabled]="loading()">
+      <button class="refresh-btn" (click)="poll()" [disabled]="loading()">
         ↻ Refresh
       </button>
     </div>
@@ -76,30 +77,20 @@ interface ThreadStats {
     }
   `]
 })
-export class ThreadStatsComponent implements OnInit, OnDestroy {
+export class ThreadStatsComponent extends PollingComponent {
+  protected override pollingInterval = 5000;
+
   loading = signal(false);
   error = signal<string | null>(null);
   stats = signal<ThreadStats | null>(null);
 
-  private interval?: ReturnType<typeof setInterval>;
-
-  ngOnInit() {
-    this.load();
-    this.interval = setInterval(() => this.load(), 5000);
-  }
-
-  ngOnDestroy() {
-    if (this.interval) clearInterval(this.interval);
-  }
-
-  async load() {
+  override async poll() {
     this.loading.set(true);
     this.error.set(null);
     try {
       const res = await fetch('/thread_stats');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      this.stats.set(data);
+      this.stats.set(await res.json());
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Failed to load');
     } finally {

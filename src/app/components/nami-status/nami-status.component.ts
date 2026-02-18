@@ -1,5 +1,6 @@
-import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Component, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PollingComponent } from '../../shared/polling.component';
 
 interface GateStatus {
   nami_speaking: boolean;
@@ -161,20 +162,11 @@ const BLOCK_REASON_LABELS: Record<string, string> = {
     }
   `]
 })
-export class NamiStatusComponent implements OnInit, OnDestroy {
+export class NamiStatusComponent extends PollingComponent {
+  protected override pollingInterval = 1500;
+
   gateStatus = signal<GateStatus | null>(null);
   offline = signal(false);
-
-  private interval?: ReturnType<typeof setInterval>;
-
-  ngOnInit() {
-    this.poll();
-    this.interval = setInterval(() => this.poll(), 1500);
-  }
-
-  ngOnDestroy() {
-    if (this.interval) clearInterval(this.interval);
-  }
 
   mode = computed<StatusMode>(() => {
     if (this.offline()) return 'offline';
@@ -207,11 +199,11 @@ export class NamiStatusComponent implements OnInit, OnDestroy {
     if (!s || s.can_speak) return null;
     const reason = s.block_reason ?? '';
     return INTERRUPTIBLE_REASONS.has(reason)
-      ? null  // covered by the badge already
+      ? null
       : (BLOCK_REASON_LABELS[reason] ?? reason);
   });
 
-  private async poll() {
+  override async poll() {
     try {
       const res = await fetch('/gate_status');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
