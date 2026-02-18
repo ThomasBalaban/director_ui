@@ -12,9 +12,10 @@ export interface ServiceStatus {
 
 // Shown when the launcher itself is unreachable
 const FALLBACK_SERVICES: ServiceStatus[] = [
-  { id: 'prompt_service', label: 'Prompt',   port: 8001, managed: true,  status: 'unknown' },
-  { id: 'director',       label: 'Director', port: 8002, managed: false, status: 'unknown' },
-  { id: 'nami',           label: 'Nami',     port: 8000, managed: false, status: 'unknown' },
+  { id: 'prompt_service',   label: 'Prompt',   port: 8001, managed: true,  status: 'unknown' },
+  { id: 'desktop_monitor',  label: 'Desktop',  port: 8003, managed: true,  status: 'unknown' },
+  { id: 'director',         label: 'Director', port: 8002, managed: false, status: 'unknown' },
+  { id: 'nami',             label: 'Nami',     port: 8000, managed: false, status: 'unknown' },
 ];
 
 @Component({

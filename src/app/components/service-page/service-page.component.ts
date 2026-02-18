@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ServiceStatus } from '../service-status-bar/service-status-bar.component';
@@ -6,19 +6,23 @@ import { ServiceStatus } from '../service-status-bar/service-status-bar.componen
 interface ServiceDetail extends ServiceStatus {
   description: string;
   pid: number | null;
+  health_check: string;   // 'http' | 'tcp'
   logs?: string[];
   logsOpen?: boolean;
   actionPending?: boolean;
 }
 
 const STATUS_META: Record<string, { label: string; color: string; icon: string }> = {
-  online:   { label: 'Online',    color: '#22c55e', icon: '●' },
-  offline:  { label: 'Offline',   color: '#4b5563', icon: '○' },
-  starting: { label: 'Starting',  color: '#3b82f6', icon: '◌' },
-  stopping: { label: 'Stopping',  color: '#f59e0b', icon: '◌' },
-  unhealthy:{ label: 'Unhealthy', color: '#ef4444', icon: '⚠' },
-  unknown:  { label: 'Unknown',   color: '#6b7280', icon: '?' },
+  online:    { label: 'Online',    color: '#22c55e', icon: '●' },
+  offline:   { label: 'Offline',   color: '#4b5563', icon: '○' },
+  starting:  { label: 'Starting',  color: '#3b82f6', icon: '◌' },
+  stopping:  { label: 'Stopping',  color: '#f59e0b', icon: '◌' },
+  unhealthy: { label: 'Unhealthy', color: '#ef4444', icon: '⚠' },
+  unknown:   { label: 'Unknown',   color: '#6b7280', icon: '?' },
 };
+
+// Services that launch a visible GUI window
+const GUI_SERVICES = new Set(['desktop_monitor']);
 
 @Component({
   selector: 'app-services-page',
@@ -37,12 +41,9 @@ const STATUS_META: Record<string, { label: string; color: string; icon: string }
           </span>
         </div>
         <div class="page-header-right">
-          <span class="last-update">
-            Updated {{ lastUpdated() }}
-          </span>
+          <span class="last-update">Updated {{ lastUpdated() }}</span>
           <button class="refresh-btn" (click)="poll()" [disabled]="loading()">
-            <span [class.spinning]="loading()">↻</span>
-            Refresh
+            <span [class.spinning]="loading()">↻</span> Refresh
           </button>
         </div>
       </div>
@@ -50,16 +51,15 @@ const STATUS_META: Record<string, { label: string; color: string; icon: string }
       <!-- Launcher offline warning -->
       @if (!launcherOnline()) {
         <div class="banner banner-warn">
-          <span class="banner-icon">⚠️</span>
+          <span>⚠️</span>
           <div>
             <strong>Launcher not running.</strong>
-            Start it with <code>python launcher.py</code> in the project folder.
-            Service management will be unavailable until it's online.
+            Start it with <code>npm start</code> in the <code>director_ui</code> folder.
           </div>
         </div>
       }
 
-      <!-- Service cards -->
+      <!-- Cards -->
       <div class="cards">
         @for (svc of services(); track svc.id) {
           <div class="card" [class]="'card-' + svc.status">
@@ -71,7 +71,22 @@ const STATUS_META: Record<string, { label: string; color: string; icon: string }
                   {{ statusMeta(svc.status).icon }}
                 </span>
                 <div>
-                  <div class="card-title">{{ svc.label }}</div>
+                  <div class="card-title-row">
+                    <span class="card-title">{{ svc.label }}</span>
+                    <!-- GUI badge -->
+                    @if (isGui(svc.id)) {
+                      <span class="type-badge badge-gui" title="Opens a desktop GUI window">🖥 GUI App</span>
+                    }
+                    <!-- Health check method -->
+                    <span
+                      class="type-badge"
+                      [class.badge-http]="svc.health_check === 'http'"
+                      [class.badge-tcp]="svc.health_check === 'tcp'"
+                      [title]="svc.health_check === 'http' ? 'Health: HTTP /health endpoint' : 'Health: TCP port probe'"
+                    >
+                      {{ svc.health_check === 'http' ? 'HTTP' : 'TCP' }}
+                    </span>
+                  </div>
                   <div class="card-desc">{{ svc.description }}</div>
                 </div>
               </div>
@@ -81,9 +96,12 @@ const STATUS_META: Record<string, { label: string; color: string; icon: string }
                 @if (svc.pid) {
                   <span class="pid-badge">PID {{ svc.pid }}</span>
                 }
-                <span class="status-pill" [style.background]="statusMeta(svc.status).color + '22'"
+                <span
+                  class="status-pill"
+                  [style.background]="statusMeta(svc.status).color + '22'"
                   [style.color]="statusMeta(svc.status).color"
-                  [style.border-color]="statusMeta(svc.status).color + '55'">
+                  [style.border-color]="statusMeta(svc.status).color + '55'"
+                >
                   @if (svc.status === 'starting' || svc.status === 'stopping') {
                     <span class="pill-spinner"></span>
                   }
@@ -92,76 +110,86 @@ const STATUS_META: Record<string, { label: string; color: string; icon: string }
               </div>
             </div>
 
+            <!-- GUI notice -->
+            @if (isGui(svc.id) && svc.managed) {
+              <div class="gui-notice">
+                <span>🖥</span>
+                <span>This service opens a <strong>desktop window</strong> when started. Close the window to stop it, or use the Stop button below.</span>
+              </div>
+            }
+
             <!-- Managed controls -->
-            <div class="card-controls" *ngIf="svc.managed">
-              @if (svc.status === 'offline' || svc.status === 'unhealthy') {
-                <button
-                  class="btn btn-start"
-                  [disabled]="svc.actionPending || !launcherOnline()"
-                  (click)="startService(svc)"
-                >
-                  {{ svc.actionPending ? 'Starting...' : '▶ Start' }}
+            @if (svc.managed) {
+              <div class="card-controls">
+                @if (svc.status === 'starting' || svc.status === 'stopping') {
+                  <div class="btn-placeholder">
+                    <span class="inline-spinner"></span>
+                    {{ svc.status === 'starting' ? 'Starting…' : 'Stopping…' }}
+                  </div>
+                } @else {
+                  @if (svc.status === 'offline' || svc.status === 'unhealthy') {
+                    <button
+                      class="btn btn-start"
+                      [disabled]="svc.actionPending || !launcherOnline()"
+                      (click)="startService(svc)"
+                    >
+                      {{ svc.actionPending ? 'Starting...' : '▶ Start' }}
+                    </button>
+                  }
+                  @if (svc.status === 'online' || svc.status === 'unhealthy') {
+                    <button
+                      class="btn btn-stop"
+                      [disabled]="svc.actionPending || !launcherOnline()"
+                      (click)="stopService(svc)"
+                    >
+                      {{ svc.actionPending ? 'Stopping...' : '■ Stop' }}
+                    </button>
+                  }
+                  @if (svc.status === 'online') {
+                    <button
+                      class="btn btn-restart"
+                      [disabled]="svc.actionPending || !launcherOnline()"
+                      (click)="restartService(svc)"
+                    >
+                      {{ svc.actionPending ? 'Restarting...' : '↺ Restart' }}
+                    </button>
+                  }
+                }
+
+                <!-- Logs toggle (managed only — most useful for GUI apps) -->
+                <button class="btn btn-logs" (click)="toggleLogs(svc)">
+                  {{ svc.logsOpen ? '▲ Hide logs' : '▼ Show logs' }}
                 </button>
-              }
-
-              @if (svc.status === 'online' || svc.status === 'unhealthy') {
-                <button
-                  class="btn btn-stop"
-                  [disabled]="svc.actionPending || !launcherOnline()"
-                  (click)="stopService(svc)"
-                >
-                  {{ svc.actionPending ? 'Stopping...' : '■ Stop' }}
-                </button>
-              }
-
-              @if (svc.status === 'online') {
-                <button
-                  class="btn btn-restart"
-                  [disabled]="svc.actionPending || !launcherOnline()"
-                  (click)="restartService(svc)"
-                >
-                  {{ svc.actionPending ? 'Restarting...' : '↺ Restart' }}
-                </button>
-              }
-
-              @if (svc.status === 'starting' || svc.status === 'stopping') {
-                <div class="btn-placeholder">
-                  <span class="inline-spinner"></span>
-                  {{ svc.status === 'starting' ? 'Starting…' : 'Stopping…' }}
-                </div>
-              }
-
-              <!-- Logs toggle (managed services only) -->
-              <button
-                class="btn btn-logs"
-                (click)="toggleLogs(svc)"
-              >
-                {{ svc.logsOpen ? '▲ Hide logs' : '▼ Show logs' }}
-              </button>
-            </div>
+              </div>
+            }
 
             <!-- Unmanaged note -->
-            <div class="card-unmanaged" *ngIf="!svc.managed">
-              <span class="unmanaged-icon">ℹ</span>
-              Monitored only — start/stop this service manually.
-            </div>
+            @if (!svc.managed) {
+              <div class="card-unmanaged">
+                <span class="unmanaged-icon">ℹ</span>
+                Monitored only — start this service manually from its own project.
+              </div>
+            }
 
             <!-- Log panel -->
             @if (svc.logsOpen) {
               <div class="log-panel">
                 <div class="log-toolbar">
-                  <span class="log-title">Logs — {{ svc.label }}</span>
-                  <button class="log-clear" (click)="refreshLogs(svc)">↻ Refresh</button>
+                  <span class="log-title">Stdout — {{ svc.label }}</span>
+                  <button class="log-refresh" (click)="refreshLogs(svc)">↻ Refresh</button>
                 </div>
-                <div class="log-body" #logBody>
+                <div class="log-body">
                   @if (svc.logs && svc.logs.length) {
                     @for (line of svc.logs; track $index) {
-                      <div class="log-line" [class.log-error]="isErrorLine(line)" [class.log-ok]="isOkLine(line)">
-                        {{ line }}
-                      </div>
+                      <div
+                        class="log-line"
+                        [class.log-error]="isErrorLine(line)"
+                        [class.log-ok]="isOkLine(line)"
+                        [class.log-warn]="isWarnLine(line)"
+                      >{{ line }}</div>
                     }
                   } @else {
-                    <div class="log-empty">No logs yet.</div>
+                    <div class="log-empty">No output captured yet.</div>
                   }
                 </div>
               </div>
@@ -170,11 +198,10 @@ const STATUS_META: Record<string, { label: string; color: string; icon: string }
           </div>
         }
       </div>
-
     </div>
   `,
   styles: [`
-    /* ── Page shell ─────────────────────────────── */
+    /* ── Page shell ─────────────────────────── */
     .page {
       height: 100vh;
       overflow-y: auto;
@@ -185,7 +212,7 @@ const STATUS_META: Record<string, { label: string; color: string; icon: string }
       flex-direction: column;
     }
 
-    /* ── Header bar ─────────────────────────────── */
+    /* ── Header ─────────────────────────────── */
     .page-header {
       display: flex;
       justify-content: space-between;
@@ -195,92 +222,52 @@ const STATUS_META: Record<string, { label: string; color: string; icon: string }
       border-bottom: 1px solid #2a2a2a;
       flex-shrink: 0;
     }
-
-    .page-header-left,
-    .page-header-right {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
+    .page-header-left, .page-header-right {
+      display: flex; align-items: center; gap: 1rem;
     }
-
     .back-btn {
-      color: #6b7280;
-      text-decoration: none;
-      font-size: 0.875rem;
+      color: #6b7280; text-decoration: none; font-size: 0.875rem;
       transition: color 0.15s;
     }
     .back-btn:hover { color: white; }
-
     .page-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: white;
-      margin: 0;
+      font-size: 1.5rem; font-weight: 700; color: white; margin: 0;
     }
-
     .launcher-badge {
-      font-size: 0.75rem;
-      padding: 3px 10px;
-      border-radius: 999px;
-      background: rgba(75,85,99,0.3);
-      color: #6b7280;
-      border: 1px solid #333;
+      font-size: 0.75rem; padding: 3px 10px; border-radius: 999px;
+      background: rgba(75,85,99,0.3); color: #6b7280; border: 1px solid #333;
     }
     .launcher-badge.online {
-      background: rgba(34,197,94,0.1);
-      color: #4ade80;
+      background: rgba(34,197,94,0.1); color: #4ade80;
       border-color: rgba(34,197,94,0.3);
     }
-
-    .last-update {
-      font-size: 0.75rem;
-      color: #4b5563;
-    }
-
+    .last-update { font-size: 0.75rem; color: #4b5563; }
     .refresh-btn {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      background: #2a2a2a;
-      border: 1px solid #444;
-      color: #ccc;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.8rem;
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px; background: #2a2a2a; border: 1px solid #444;
+      color: #ccc; border-radius: 6px; cursor: pointer; font-size: 0.8rem;
       transition: background 0.15s;
     }
     .refresh-btn:hover:not(:disabled) { background: #333; }
     .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .spinning { display: inline-block; animation: spin 0.6s linear infinite; }
 
-    .spinning {
-      display: inline-block;
-      animation: spin 0.6s linear infinite;
-    }
-
-    /* ── Banner ──────────────────────────────────── */
+    /* ── Banner ──────────────────────────────── */
     .banner {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.75rem;
-      margin: 1.25rem 1.5rem 0;
-      padding: 0.875rem 1rem;
-      border-radius: 8px;
-      font-size: 0.875rem;
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      margin: 1.25rem 1.5rem 0; padding: 0.875rem 1rem;
+      border-radius: 8px; font-size: 0.875rem;
     }
     .banner-warn {
-      background: rgba(245,158,11,0.1);
-      border: 1px solid rgba(245,158,11,0.3);
+      background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3);
       color: #fbbf24;
     }
     .banner code {
-      background: rgba(0,0,0,0.3);
-      padding: 1px 6px;
-      border-radius: 4px;
-      font-family: monospace;
+      background: rgba(0,0,0,0.3); padding: 1px 6px;
+      border-radius: 4px; font-family: monospace;
     }
 
-    /* ── Cards grid ──────────────────────────────── */
+    /* ── Cards grid ──────────────────────────── */
     .cards {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
@@ -288,247 +275,143 @@ const STATUS_META: Record<string, { label: string; color: string; icon: string }
       padding: 1.25rem 1.5rem 2rem;
     }
 
-    /* ── Card ──────────────────────────────────── */
+    /* ── Card ───────────────────────────────── */
     .card {
-      background: #1e1e1e;
-      border: 1px solid #2a2a2a;
-      border-radius: 12px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      transition: border-color 0.2s;
+      background: #1e1e1e; border: 1px solid #2a2a2a;
+      border-radius: 12px; overflow: hidden;
+      display: flex; flex-direction: column; transition: border-color 0.2s;
     }
-
-    .card-online   { border-color: rgba(34,197,94,0.25); }
-    .card-starting { border-color: rgba(59,130,246,0.25); }
-    .card-stopping { border-color: rgba(245,158,11,0.25); }
-    .card-unhealthy{ border-color: rgba(239,68,68,0.25); }
+    .card-online    { border-color: rgba(34,197,94,0.25); }
+    .card-starting  { border-color: rgba(59,130,246,0.25); }
+    .card-stopping  { border-color: rgba(245,158,11,0.25); }
+    .card-unhealthy { border-color: rgba(239,68,68,0.25); }
 
     .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid #2a2a2a;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 1.25rem; border-bottom: 1px solid #2a2a2a;
     }
-
     .card-header-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      display: flex; align-items: flex-start; gap: 12px;
     }
+    .status-icon { font-size: 1.5rem; line-height: 1; width: 24px; text-align: center; }
 
-    .status-icon {
-      font-size: 1.5rem;
-      line-height: 1;
-      width: 24px;
-      text-align: center;
+    .card-title-row {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
     }
+    .card-title { font-weight: 700; font-size: 1rem; color: white; }
+    .card-desc { font-size: 0.75rem; color: #6b7280; margin-top: 3px; }
 
-    .card-title {
-      font-weight: 700;
-      font-size: 1rem;
-      color: white;
+    /* ── Type badges ─────────────────────────── */
+    .type-badge {
+      font-size: 0.65rem; font-weight: 700; padding: 2px 6px;
+      border-radius: 4px; border: 1px solid; text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
+    .badge-gui  { background: rgba(139,92,246,0.15); color: #a78bfa; border-color: rgba(139,92,246,0.3); }
+    .badge-http { background: rgba(34,197,94,0.1);   color: #4ade80; border-color: rgba(34,197,94,0.25); }
+    .badge-tcp  { background: rgba(59,130,246,0.1);  color: #60a5fa; border-color: rgba(59,130,246,0.25); }
 
-    .card-desc {
-      font-size: 0.75rem;
-      color: #6b7280;
-      margin-top: 1px;
+    /* ── GUI notice ──────────────────────────── */
+    .gui-notice {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 0.5rem 1.25rem;
+      background: rgba(139,92,246,0.07);
+      border-bottom: 1px solid rgba(139,92,246,0.15);
+      font-size: 0.75rem; color: #a78bfa; line-height: 1.5;
     }
 
     .card-header-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      display: flex; align-items: center; gap: 8px;
     }
-
     .port-badge {
-      font-size: 0.75rem;
-      font-family: monospace;
-      color: #6b7280;
-      background: #111;
-      padding: 2px 7px;
-      border-radius: 4px;
-      border: 1px solid #333;
+      font-size: 0.75rem; font-family: monospace; color: #6b7280;
+      background: #111; padding: 2px 7px; border-radius: 4px; border: 1px solid #333;
     }
-
-    .pid-badge {
-      font-size: 0.7rem;
-      font-family: monospace;
-      color: #4b5563;
-    }
+    .pid-badge { font-size: 0.7rem; font-family: monospace; color: #4b5563; }
 
     .status-pill {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 3px 10px;
-      border-radius: 999px;
-      border: 1px solid;
-      font-size: 0.75rem;
-      font-weight: 600;
+      display: flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 999px; border: 1px solid;
+      font-size: 0.75rem; font-weight: 600;
     }
-
     .pill-spinner {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      border: 1.5px solid transparent;
-      border-top-color: currentColor;
-      animation: spin 0.7s linear infinite;
-      flex-shrink: 0;
+      width: 8px; height: 8px; border-radius: 50%;
+      border: 1.5px solid transparent; border-top-color: currentColor;
+      animation: spin 0.7s linear infinite; flex-shrink: 0;
     }
 
-    /* ── Card controls ───────────────────────────── */
+    /* ── Controls ────────────────────────────── */
     .card-controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 0.75rem 1.25rem;
-      background: #161616;
+      display: flex; align-items: center; gap: 8px;
+      padding: 0.75rem 1.25rem; background: #161616;
     }
-
     .btn {
-      padding: 6px 16px;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      border: 1px solid;
-      cursor: pointer;
-      transition: all 0.15s;
+      padding: 6px 16px; border-radius: 6px; font-size: 0.8rem;
+      font-weight: 600; border: 1px solid; cursor: pointer; transition: all 0.15s;
     }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    .btn-start {
-      background: rgba(34,197,94,0.15);
-      border-color: rgba(34,197,94,0.4);
-      color: #4ade80;
-    }
-    .btn-start:hover:not(:disabled) {
-      background: rgba(34,197,94,0.25);
-    }
+    .btn-start   { background: rgba(34,197,94,0.15);  border-color: rgba(34,197,94,0.4);  color: #4ade80; }
+    .btn-stop    { background: rgba(239,68,68,0.15);  border-color: rgba(239,68,68,0.4);  color: #f87171; }
+    .btn-restart { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.35); color: #fbbf24; }
+    .btn-logs    { background: transparent; border-color: #333; color: #6b7280; margin-left: auto; }
 
-    .btn-stop {
-      background: rgba(239,68,68,0.15);
-      border-color: rgba(239,68,68,0.4);
-      color: #f87171;
-    }
-    .btn-stop:hover:not(:disabled) {
-      background: rgba(239,68,68,0.25);
-    }
-
-    .btn-restart {
-      background: rgba(245,158,11,0.12);
-      border-color: rgba(245,158,11,0.35);
-      color: #fbbf24;
-    }
-    .btn-restart:hover:not(:disabled) {
-      background: rgba(245,158,11,0.2);
-    }
-
-    .btn-logs {
-      background: transparent;
-      border-color: #333;
-      color: #6b7280;
-      margin-left: auto;
-    }
+    .btn-start:hover:not(:disabled)   { background: rgba(34,197,94,0.25); }
+    .btn-stop:hover:not(:disabled)    { background: rgba(239,68,68,0.25); }
+    .btn-restart:hover:not(:disabled) { background: rgba(245,158,11,0.22); }
     .btn-logs:hover { border-color: #555; color: #9ca3af; }
 
     .btn-placeholder {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #6b7280;
-      font-size: 0.8rem;
+      display: flex; align-items: center; gap: 8px;
+      color: #6b7280; font-size: 0.8rem;
     }
-
     .inline-spinner {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      border: 2px solid #333;
-      border-top-color: #6b7280;
-      animation: spin 0.7s linear infinite;
-      flex-shrink: 0;
+      width: 12px; height: 12px; border-radius: 50%;
+      border: 2px solid #333; border-top-color: #6b7280;
+      animation: spin 0.7s linear infinite; flex-shrink: 0;
     }
 
-    /* ── Unmanaged note ──────────────────────────── */
+    /* ── Unmanaged ───────────────────────────── */
     .card-unmanaged {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 0.625rem 1.25rem;
-      background: #161616;
-      font-size: 0.75rem;
-      color: #4b5563;
+      display: flex; align-items: center; gap: 8px;
+      padding: 0.625rem 1.25rem; background: #161616;
+      font-size: 0.75rem; color: #4b5563;
     }
     .unmanaged-icon {
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: #2a2a2a;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.65rem;
-      color: #6b7280;
-      flex-shrink: 0;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #2a2a2a; display: flex; align-items: center;
+      justify-content: center; font-size: 0.65rem; color: #6b7280;
     }
 
-    /* ── Log panel ───────────────────────────────── */
+    /* ── Log panel ───────────────────────────── */
     .log-panel {
-      display: flex;
-      flex-direction: column;
-      border-top: 1px solid #2a2a2a;
+      display: flex; flex-direction: column; border-top: 1px solid #2a2a2a;
     }
-
     .log-toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.5rem 1rem;
-      background: #111;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.5rem 1rem; background: #111;
     }
-
     .log-title {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #4b5563;
-      font-weight: 700;
+      font-size: 0.7rem; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #4b5563; font-weight: 700;
     }
-
-    .log-clear {
-      background: transparent;
-      border: none;
-      color: #4b5563;
-      cursor: pointer;
-      font-size: 0.75rem;
-      transition: color 0.15s;
+    .log-refresh {
+      background: transparent; border: none; color: #4b5563;
+      cursor: pointer; font-size: 0.75rem; transition: color 0.15s;
     }
-    .log-clear:hover { color: #9ca3af; }
-
+    .log-refresh:hover { color: #9ca3af; }
     .log-body {
-      padding: 0.75rem 1rem;
-      font-family: 'Courier New', monospace;
-      font-size: 0.72rem;
-      line-height: 1.6;
-      background: #0d0d0d;
-      max-height: 280px;
-      overflow-y: auto;
-      color: #9ca3af;
+      padding: 0.75rem 1rem; font-family: 'Courier New', monospace;
+      font-size: 0.72rem; line-height: 1.6; background: #0d0d0d;
+      max-height: 300px; overflow-y: auto; color: #9ca3af;
     }
-
-    .log-line { padding: 1px 0; }
+    .log-line  { padding: 1px 0; }
     .log-error { color: #f87171; }
+    .log-warn  { color: #fbbf24; }
     .log-ok    { color: #4ade80; }
     .log-empty { color: #374151; font-style: italic; }
 
-    /* ── Shared animations ───────────────────────── */
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   `]
 })
 export class ServicesPageComponent implements OnInit, OnDestroy {
@@ -552,12 +435,20 @@ export class ServicesPageComponent implements OnInit, OnDestroy {
     return STATUS_META[status] ?? STATUS_META['unknown'];
   }
 
+  isGui(id: string): boolean {
+    return GUI_SERVICES.has(id);
+  }
+
   isErrorLine(line: string): boolean {
-    return /error|failed|exception|traceback/i.test(line);
+    return /error|failed|exception|traceback|fatal/i.test(line);
+  }
+
+  isWarnLine(line: string): boolean {
+    return /warn|warning|⚠/i.test(line);
   }
 
   isOkLine(line: string): boolean {
-    return /✅|healthy|ready|started|online/i.test(line);
+    return /✅|healthy|ready|started|online|running/i.test(line);
   }
 
   async poll() {
@@ -569,7 +460,6 @@ export class ServicesPageComponent implements OnInit, OnDestroy {
       const fresh: ServiceDetail[] = await res.json();
       this.launcherOnline.set(true);
 
-      // Merge with existing to preserve logsOpen/logs state
       const current = this.services();
       const merged = fresh.map(s => {
         const existing = current.find(c => c.id === s.id);
@@ -584,7 +474,7 @@ export class ServicesPageComponent implements OnInit, OnDestroy {
       this.services.set(merged);
       this.lastUpdated.set(new Date().toLocaleTimeString());
 
-      // Refresh logs for any open panels
+      // Refresh open log panels
       for (const svc of merged) {
         if (svc.logsOpen) this.refreshLogs(svc);
       }
@@ -599,7 +489,10 @@ export class ServicesPageComponent implements OnInit, OnDestroy {
     this.setActionPending(svc.id, true);
     try {
       await fetch(`/launcher/services/${svc.id}/start`, { method: 'POST' });
+      // Poll more frequently while starting
       await this.poll();
+      setTimeout(() => this.poll(), 2000);
+      setTimeout(() => this.poll(), 5000);
     } finally {
       this.setActionPending(svc.id, false);
     }
@@ -620,6 +513,7 @@ export class ServicesPageComponent implements OnInit, OnDestroy {
     try {
       await fetch(`/launcher/services/${svc.id}/restart`, { method: 'POST' });
       await this.poll();
+      setTimeout(() => this.poll(), 3000);
     } finally {
       this.setActionPending(svc.id, false);
     }
@@ -635,15 +529,13 @@ export class ServicesPageComponent implements OnInit, OnDestroy {
 
   async refreshLogs(svc: ServiceDetail) {
     try {
-      const res = await fetch(`/launcher/services/${svc.id}/logs?last=120`);
+      const res = await fetch(`/launcher/services/${svc.id}/logs?last=150`);
       if (!res.ok) return;
       const data = await res.json();
       this.services.update(svcs =>
         svcs.map(s => s.id === svc.id ? { ...s, logs: data.lines } : s)
       );
-    } catch {
-      // silent
-    }
+    } catch { /* silent */ }
   }
 
   private setActionPending(id: string, pending: boolean) {
