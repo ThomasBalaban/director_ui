@@ -3,12 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Streamer } from '../../models/director.models';
 import { NamiStatusComponent } from '../nami-status/nami-status.component';
-import { ServiceStatusBarComponent } from '../service-status-bar/service-status-bar.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, FormsModule, NamiStatusComponent, ServiceStatusBarComponent],
+  imports: [CommonModule, FormsModule, NamiStatusComponent],
   template: `
     <header class="header">
       <div class="header-top">
@@ -19,9 +18,6 @@ import { ServiceStatusBarComponent } from '../service-status-bar/service-status-
         </h1>
 
         <div class="pills">
-          <!-- All-services health dots (links to /services) -->
-          <app-service-status-bar></app-service-status-bar>
-
           <!-- Nami gate status -->
           <app-nami-status></app-nami-status>
 

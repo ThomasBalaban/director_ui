@@ -23,7 +23,6 @@ import { MetricsPanelComponent } from '../metrics-panel/metrics-panel.component'
 import { MemoryPanelComponent } from '../memory-panel/memory-panel.component';
 import { UserPanelComponent } from '../user-panel/user-panel.component';
 import { ContextDrawerComponent } from '../context-drawer/context-drawer.component';
-import { DebugDrawerComponent } from '../debug-drawer/debug-drawer.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -31,7 +30,6 @@ import { DebugDrawerComponent } from '../debug-drawer/debug-drawer.component';
   imports: [
     CommonModule,
     FormsModule,
-    DebugDrawerComponent,
     HeaderComponent,
     DirectivesPanelComponent,
     SummaryPanelComponent,

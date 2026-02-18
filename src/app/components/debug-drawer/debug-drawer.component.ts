@@ -1,5 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import { ThreadStatsComponent } from '../thread-stats/thread-stats.component';
 import { PromptDebugComponent } from '../prompt-debug/prompt-debug.component';
 
@@ -8,10 +9,33 @@ type DrawerPanel = 'thread-stats' | 'prompt-debug' | null;
 @Component({
   selector: 'app-debug-drawer',
   standalone: true,
-  imports: [CommonModule, ThreadStatsComponent, PromptDebugComponent],
+  imports: [CommonModule, RouterLink, RouterLinkActive, ThreadStatsComponent, PromptDebugComponent],
   template: `
     <!-- Left nav bar -->
     <div class="debug-nav">
+
+      <!-- Home -->
+      <a
+        routerLink="/"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-btn nav-link"
+        title="Dashboard">
+        🏠
+      </a>
+
+      <!-- Services -->
+      <a
+        routerLink="/services"
+        routerLinkActive="active"
+        class="nav-btn nav-link"
+        title="Manage Services">
+        ⚙
+      </a>
+
+      <div class="nav-divider"></div>
+
+      <!-- Panel toggles -->
       <button
         class="nav-btn"
         [class.active]="activePanel() === 'thread-stats'"
@@ -65,7 +89,7 @@ type DrawerPanel = 'thread-stats' | 'prompt-debug' | null;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding-top: 80px;
+      padding-top: 16px;
       gap: 8px;
       flex-shrink: 0;
     }
@@ -83,6 +107,8 @@ type DrawerPanel = 'thread-stats' | 'prompt-debug' | null;
       justify-content: center;
       transition: background 0.15s, border-color 0.15s;
       line-height: 1;
+      text-decoration: none;
+      color: inherit;
     }
 
     .nav-btn:hover {
@@ -93,6 +119,20 @@ type DrawerPanel = 'thread-stats' | 'prompt-debug' | null;
     .nav-btn.active {
       background: #2a2a2a;
       border-color: #6366f1;
+    }
+
+    /* Services link uses a teal accent when active */
+    .nav-link.active {
+      background: rgba(34, 197, 94, 0.12);
+      border-color: rgba(34, 197, 94, 0.5);
+    }
+
+    .nav-divider {
+      width: 28px;
+      height: 1px;
+      background: #2a2a2a;
+      margin: 4px 0;
+      flex-shrink: 0;
     }
 
     .drawer-overlay {
