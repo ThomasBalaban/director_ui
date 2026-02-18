@@ -1,0 +1,19 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--surface-2);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding-left: 48px; 
+}
+
+pre {
+  margin: 0;
+}

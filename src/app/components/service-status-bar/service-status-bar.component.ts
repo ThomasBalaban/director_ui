@@ -1,21 +1,14 @@
-import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-
-export interface ServiceStatus {
-  id: string;
-  label: string;
-  port: number;
-  managed: boolean;
-  status: 'online' | 'offline' | 'starting' | 'stopping' | 'unhealthy' | 'unknown';
-}
+import { ServiceStatus } from '../../shared/interfaces/director.interfaces';
 
 // Shown when the launcher itself is unreachable
 const FALLBACK_SERVICES: ServiceStatus[] = [
-  { id: 'prompt_service',   label: 'Prompt',   port: 8001, managed: true,  status: 'unknown' },
-  { id: 'desktop_monitor',  label: 'Desktop',  port: 8003, managed: true,  status: 'unknown' },
-  { id: 'director',         label: 'Director', port: 8002, managed: false, status: 'unknown' },
-  { id: 'nami',             label: 'Nami',     port: 8000, managed: false, status: 'unknown' },
+  { id: 'prompt_service',  label: 'Prompt',   port: 8001, managed: true,  status: 'unknown' },
+  { id: 'desktop_monitor', label: 'Desktop',  port: 8003, managed: true,  status: 'unknown' },
+  { id: 'director',        label: 'Director', port: 8002, managed: false, status: 'unknown' },
+  { id: 'nami',            label: 'Nami',     port: 8000, managed: false, status: 'unknown' },
 ];
 
 @Component({
@@ -24,21 +17,19 @@ const FALLBACK_SERVICES: ServiceStatus[] = [
   imports: [CommonModule, RouterLink],
   template: `
     <a routerLink="/services" class="status-bar" title="Manage services">
-      <!-- Launcher dot -->
-      <div class="service-dot-group">
+      <div class="dot-group">
         <span
           class="dot"
           [class]="'dot-' + (launcherOnline() ? 'online' : 'offline')"
-          title="Launcher (8003)"
+          title="Launcher (8010)"
         ></span>
         <span class="dot-label">Launcher</span>
       </div>
 
       <span class="divider">|</span>
 
-      <!-- Per-service dots -->
       @for (svc of services(); track svc.id) {
-        <div class="service-dot-group">
+        <div class="dot-group">
           <span
             class="dot"
             [class]="'dot-' + svc.status"
@@ -61,20 +52,20 @@ const FALLBACK_SERVICES: ServiceStatus[] = [
       align-items: center;
       gap: 8px;
       padding: 5px 10px;
-      border-radius: 8px;
-      border: 1px solid #333;
-      background: #1a1a1a;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-faint);
+      background: var(--surface-2);
       text-decoration: none;
       cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
+      transition: border-color var(--transition-fast), background var(--transition-fast);
+
+      &:hover {
+        border-color: #555;
+        background: #222;
+      }
     }
 
-    .status-bar:hover {
-      border-color: #555;
-      background: #222;
-    }
-
-    .service-dot-group {
+    .dot-group {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -83,8 +74,7 @@ const FALLBACK_SERVICES: ServiceStatus[] = [
 
     .dot {
       position: relative;
-      width: 8px;
-      height: 8px;
+      width: 8px; height: 8px;
       border-radius: 50%;
       flex-shrink: 0;
       display: flex;
@@ -92,15 +82,13 @@ const FALLBACK_SERVICES: ServiceStatus[] = [
       justify-content: center;
     }
 
-    /* Status colours */
-    .dot-online    { background: #22c55e; box-shadow: 0 0 4px rgba(34,197,94,0.6); }
+    .dot-online    { background: var(--accent-green); box-shadow: 0 0 4px rgba(34, 197, 94, 0.6); }
     .dot-offline   { background: #374151; }
-    .dot-unhealthy { background: #f59e0b; box-shadow: 0 0 4px rgba(245,158,11,0.6); }
-    .dot-unknown   { background: #4b5563; border: 1px dashed #6b7280; }
+    .dot-unhealthy { background: var(--accent-yellow); box-shadow: 0 0 4px rgba(245, 158, 11, 0.6); }
+    .dot-unknown   { background: var(--text-dimmer); border: 1px dashed var(--text-dim); }
     .dot-starting,
-    .dot-stopping  { background: #3b82f6; }
+    .dot-stopping  { background: var(--accent-blue); }
 
-    /* Spinner ring for transitional states */
     .dot-spinner {
       position: absolute;
       inset: -3px;
@@ -110,57 +98,40 @@ const FALLBACK_SERVICES: ServiceStatus[] = [
       animation: spin 0.8s linear infinite;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
     .dot-label {
       font-size: 0.6rem;
-      color: #6b7280;
+      color: var(--text-dim);
       white-space: nowrap;
       line-height: 1;
     }
 
-    .divider {
-      color: #333;
-      font-size: 0.75rem;
-      align-self: center;
-    }
+    .divider { color: var(--border-faint); font-size: 0.75rem; align-self: center; }
 
     .manage-hint {
       font-size: 0.7rem;
-      color: #4b5563;
+      color: var(--text-dimmer);
       margin-left: 2px;
       white-space: nowrap;
-      transition: color 0.2s;
+      transition: color var(--transition-fast);
     }
 
-    .status-bar:hover .manage-hint {
-      color: #9ca3af;
-    }
+    .status-bar:hover .manage-hint { color: var(--text-muted); }
   `]
 })
 export class ServiceStatusBarComponent implements OnInit, OnDestroy {
-  services   = signal<ServiceStatus[]>(FALLBACK_SERVICES);
+  services       = signal<ServiceStatus[]>(FALLBACK_SERVICES);
   launcherOnline = signal(false);
 
   private interval?: ReturnType<typeof setInterval>;
 
-  ngOnInit() {
-    this.poll();
-    this.interval = setInterval(() => this.poll(), 3000);
-  }
-
-  ngOnDestroy() {
-    if (this.interval) clearInterval(this.interval);
-  }
+  ngOnInit()  { this.poll(); this.interval = setInterval(() => this.poll(), 3000); }
+  ngOnDestroy() { if (this.interval) clearInterval(this.interval); }
 
   private async poll() {
     try {
       const res = await fetch('/launcher/services');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: ServiceStatus[] = await res.json();
-      this.services.set(data);
+      this.services.set(await res.json());
       this.launcherOnline.set(true);
     } catch {
       this.launcherOnline.set(false);

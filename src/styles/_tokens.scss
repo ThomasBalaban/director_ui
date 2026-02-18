@@ -1,0 +1,53 @@
+:root {
+  --surface-0:   #0d0d0d;
+  --surface-1:   #111;
+  --surface-2:   #1a1a1a;
+  --surface-3:   #1e1e1e;
+  --surface-4:   #2a2a2a;
+  --surface-5:   #3a3a3a;
+
+  --border:      #444;
+  --border-dim:  #2a2a2a;
+  --border-faint: #333;
+
+  --text:        #e0e0e0;
+  --text-muted:  #9ca3af;
+  --text-dim:    #6b7280;
+  --text-dimmer: #4b5563;
+  --text-white:  #fff;
+
+  --accent-purple:      #a855f7;
+  --accent-purple-light: #a78bfa;
+  --accent-purple-pale:  #c4b5fd;
+  --accent-purple-dim:   rgba(168, 85, 247, 0.1);
+
+  --accent-green:       #22c55e;
+  --accent-green-light: #4ade80;
+  --accent-teal:        #63e2b7;
+
+  --accent-blue:        #3b82f6;
+  --accent-blue-light:  #60a5fa;
+
+  --accent-red:         #ef4444;
+  --accent-red-light:   #f87171;
+  --accent-red-pale:    #fecaca;
+  --accent-red-dim:     rgba(239, 68, 68, 0.1);
+
+  --accent-yellow:      #eab308;
+  --accent-yellow-light: #fbbf24;
+
+  --accent-indigo:      #6366f1;
+
+  --nami-purple:        #a970ff;
+  --nami-teal:          #63e2b7;
+
+  --radius-sm:   0.25rem;  
+  --radius-md:   0.5rem;    
+  --radius-lg:   0.75rem;  
+  --radius-xl:   1rem;     
+  --radius-full: 9999px;
+
+  --transition-fast:   0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow:   0.3s ease;
+}

@@ -18,15 +18,15 @@ import { CommonModule } from '@angular/common';
     .summary-text {
       font-size: 1rem;
       font-weight: 500;
-      color: white;
+      color: var(--text-white);
       line-height: 1.5;
     }
-    
+
     .raw-context {
       font-size: 0.75rem;
-      color: #9ca3af;
+      color: var(--text-muted);
       margin-top: 1rem;
-      border-top: 1px dashed #444;
+      border-top: 1px dashed var(--border);
       padding-top: 0.5rem;
       white-space: pre-wrap;
       max-height: 150px;

@@ -10,32 +10,30 @@ import { UserProfile } from '../../models/director.models';
     <div class="panel">
       <h2 class="panel-title">👤 Active User</h2>
       <div class="panel-content">
+
         <div *ngIf="user" class="user-card">
           <div class="user-header">
             <h3>{{ user.username }}</h3>
-            <span class="badge">{{ user.relationship.tier }}</span>
+            <span class="tier-badge">{{ user.relationship.tier }}</span>
           </div>
-          
-          <div class="field">
-            <span class="label">Nickname:</span>
-            <span class="value">{{ user.nickname }}</span>
+
+          <div class="user-field">
+            <span class="user-label">Nickname:</span>
+            <span class="user-value">{{ user.nickname }}</span>
           </div>
-          
-          <div class="field">
-            <span class="label">Role:</span>
-            <span class="value role" [ngClass]="user.role">{{ user.role }}</span>
+
+          <div class="user-field">
+            <span class="user-label">Role:</span>
+            <span class="user-value role" [ngClass]="user.role">{{ user.role }}</span>
           </div>
-          
+
           <div class="affinity">
-            <span class="label">Affinity:</span>
-            <div class="bar-bg">
-              <div 
-                class="bar" 
-                [style.width.%]="user.relationship.affinity"
-              ></div>
+            <span class="user-label">Affinity</span>
+            <div class="bar-bg bar-bg--sm">
+              <div class="bar bar-purple" [style.width.%]="user.relationship.affinity"></div>
             </div>
           </div>
-          
+
           <div class="facts" *ngIf="user.facts?.length">
             <strong>Known Facts:</strong>
             <ul>
@@ -43,8 +41,9 @@ import { UserProfile } from '../../models/director.models';
             </ul>
           </div>
         </div>
-        
+
         <p *ngIf="!user" class="empty">No active user context.</p>
+
       </div>
     </div>
   `,
@@ -52,106 +51,73 @@ import { UserProfile } from '../../models/director.models';
     .user-card {
       background: #202020;
       padding: 0.75rem;
-      border-radius: 0.5rem;
-      border: 1px solid #444;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
     }
-    
+
     .user-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 0.5rem;
+
+      h3 {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--text-white);
+        margin: 0;
+      }
     }
-    
-    .user-header h3 {
-      font-size: 0.875rem;
-      font-weight: 700;
-      color: white;
-      margin: 0;
-    }
-    
-    .badge {
+
+    .tier-badge {
       font-size: 0.7rem;
       padding: 2px 6px;
       border-radius: 4px;
-      background: #444;
+      background: var(--border);
       color: #bbb;
     }
-    
-    .field {
+
+    .user-field {
       font-size: 0.75rem;
-      color: #9ca3af;
+      color: var(--text-muted);
       margin-bottom: 0.25rem;
     }
-    
-    .field .value {
-      color: white;
-    }
-    
-    .role.handler {
-      color: #f472b6;
-      font-weight: 600;
-    }
-    
-    .role.viewer {
-      color: #63e2b7;
-    }
-    
-    .affinity {
-      margin-top: 0.5rem;
-    }
-    
-    .affinity .label {
+
+    .user-label {
       font-size: 0.75rem;
-      color: #9ca3af;
+      color: var(--text-muted);
       display: block;
       margin-bottom: 0.25rem;
     }
-    
-    .bar-bg {
-      width: 100%;
-      height: 4px;
-      background: #374151;
-      border-radius: 9999px;
-      overflow: hidden;
+
+    .user-value { color: var(--text-white); }
+
+    .role {
+      &.handler { color: #f472b6; font-weight: 600; }
+      &.viewer  { color: var(--nami-teal); }
     }
-    
-    .bar {
-      height: 100%;
-      background: #a855f7;
-      border-radius: 9999px;
-      transition: width 0.3s;
-    }
-    
+
+    .bar-bg--sm { height: 4px; background: #374151; }
+
+    .affinity { margin-top: 0.5rem; }
+
     .facts {
       margin-top: 0.5rem;
       padding-top: 0.5rem;
-      border-top: 1px solid #444;
+      border-top: 1px solid var(--border);
       font-size: 0.75rem;
       color: #d1d5db;
-    }
-    
-    .facts strong {
-      display: block;
-      margin-bottom: 0.25rem;
-    }
-    
-    .facts ul {
-      list-style: disc;
-      padding-left: 1rem;
-      margin: 0;
-      color: #9ca3af;
-    }
-    
-    .facts li {
-      margin-bottom: 0.125rem;
-    }
-    
-    .empty {
-      color: #6b7280;
-      font-style: italic;
-      text-align: center;
-      font-size: 0.875rem;
+
+      strong { display: block; margin-bottom: 0.25rem; }
+
+      ul {
+        list-style: disc;
+        padding-left: 1rem;
+        margin: 0;
+        color: var(--text-muted);
+      }
+
+      li { margin-bottom: 0.125rem; }
     }
   `]
 })

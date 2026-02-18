@@ -1,12 +1,12 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { ServiceStatus } from '../service-status-bar/service-status-bar.component';
+import { ServiceStatus } from '../../shared/interfaces/director.interfaces';
 
 interface ServiceDetail extends ServiceStatus {
   description: string;
   pid: number | null;
-  health_check: string;   // 'http' | 'tcp'
+  health_check: string;
   logs?: string[];
   logsOpen?: boolean;
   actionPending?: boolean;
@@ -21,7 +21,6 @@ const STATUS_META: Record<string, { label: string; color: string; icon: string }
   unknown:   { label: 'Unknown',   color: '#6b7280', icon: '?' },
 };
 
-// Services that launch a visible GUI window
 const GUI_SERVICES = new Set(['desktop_monitor']);
 
 @Component({
@@ -42,7 +41,7 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
         </div>
         <div class="page-header-right">
           <span class="last-update">Updated {{ lastUpdated() }}</span>
-          <button class="refresh-btn" (click)="poll()" [disabled]="loading()">
+          <button class="btn btn-ghost" (click)="poll()" [disabled]="loading()">
             <span [class.spinning]="loading()">↻</span> Refresh
           </button>
         </div>
@@ -64,7 +63,6 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
         @for (svc of services(); track svc.id) {
           <div class="card" [class]="'card-' + svc.status">
 
-            <!-- Card header -->
             <div class="card-header">
               <div class="card-header-left">
                 <span class="status-icon" [style.color]="statusMeta(svc.status).color">
@@ -73,19 +71,15 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
                 <div>
                   <div class="card-title-row">
                     <span class="card-title">{{ svc.label }}</span>
-                    <!-- GUI badge -->
                     @if (isGui(svc.id)) {
                       <span class="type-badge badge-gui" title="Opens a desktop GUI window">🖥 GUI App</span>
                     }
-                    <!-- Health check method -->
                     <span
                       class="type-badge"
                       [class.badge-http]="svc.health_check === 'http'"
                       [class.badge-tcp]="svc.health_check === 'tcp'"
                       [title]="svc.health_check === 'http' ? 'Health: HTTP /health endpoint' : 'Health: TCP port probe'"
-                    >
-                      {{ svc.health_check === 'http' ? 'HTTP' : 'TCP' }}
-                    </span>
+                    >{{ svc.health_check === 'http' ? 'HTTP' : 'TCP' }}</span>
                   </div>
                   <div class="card-desc">{{ svc.description }}</div>
                 </div>
@@ -93,9 +87,7 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
 
               <div class="card-header-right">
                 <span class="port-badge">:{{ svc.port }}</span>
-                @if (svc.pid) {
-                  <span class="pid-badge">PID {{ svc.pid }}</span>
-                }
+                @if (svc.pid) { <span class="pid-badge">PID {{ svc.pid }}</span> }
                 <span
                   class="status-pill"
                   [style.background]="statusMeta(svc.status).color + '22'"
@@ -110,7 +102,6 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
               </div>
             </div>
 
-            <!-- GUI notice -->
             @if (isGui(svc.id) && svc.managed) {
               <div class="gui-notice">
                 <span>🖥</span>
@@ -118,52 +109,36 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
               </div>
             }
 
-            <!-- Managed controls -->
             @if (svc.managed) {
               <div class="card-controls">
                 @if (svc.status === 'starting' || svc.status === 'stopping') {
-                  <div class="btn-placeholder">
+                  <div class="pending-label">
                     <span class="inline-spinner"></span>
                     {{ svc.status === 'starting' ? 'Starting…' : 'Stopping…' }}
                   </div>
                 } @else {
                   @if (svc.status === 'offline' || svc.status === 'unhealthy') {
-                    <button
-                      class="btn btn-start"
-                      [disabled]="svc.actionPending || !launcherOnline()"
-                      (click)="startService(svc)"
-                    >
+                    <button class="btn btn-start" [disabled]="svc.actionPending || !launcherOnline()" (click)="startService(svc)">
                       {{ svc.actionPending ? 'Starting...' : '▶ Start' }}
                     </button>
                   }
                   @if (svc.status === 'online' || svc.status === 'unhealthy') {
-                    <button
-                      class="btn btn-stop"
-                      [disabled]="svc.actionPending || !launcherOnline()"
-                      (click)="stopService(svc)"
-                    >
+                    <button class="btn btn-stop" [disabled]="svc.actionPending || !launcherOnline()" (click)="stopService(svc)">
                       {{ svc.actionPending ? 'Stopping...' : '■ Stop' }}
                     </button>
                   }
                   @if (svc.status === 'online') {
-                    <button
-                      class="btn btn-restart"
-                      [disabled]="svc.actionPending || !launcherOnline()"
-                      (click)="restartService(svc)"
-                    >
+                    <button class="btn btn-restart" [disabled]="svc.actionPending || !launcherOnline()" (click)="restartService(svc)">
                       {{ svc.actionPending ? 'Restarting...' : '↺ Restart' }}
                     </button>
                   }
                 }
-
-                <!-- Logs toggle (managed only — most useful for GUI apps) -->
-                <button class="btn btn-logs" (click)="toggleLogs(svc)">
+                <button class="btn btn-ghost log-toggle" (click)="toggleLogs(svc)">
                   {{ svc.logsOpen ? '▲ Hide logs' : '▼ Show logs' }}
                 </button>
               </div>
             }
 
-            <!-- Unmanaged note -->
             @if (!svc.managed) {
               <div class="card-unmanaged">
                 <span class="unmanaged-icon">ℹ</span>
@@ -171,7 +146,6 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
               </div>
             }
 
-            <!-- Log panel -->
             @if (svc.logsOpen) {
               <div class="log-panel">
                 <div class="log-toolbar">
@@ -183,9 +157,9 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
                     @for (line of svc.logs; track $index) {
                       <div
                         class="log-line"
-                        [class.log-error]="isErrorLine(line)"
-                        [class.log-ok]="isOkLine(line)"
-                        [class.log-warn]="isWarnLine(line)"
+                        [class.log-line--error]="isErrorLine(line)"
+                        [class.log-line--ok]="isOkLine(line)"
+                        [class.log-line--warn]="isWarnLine(line)"
                       >{{ line }}</div>
                     }
                   } @else {
@@ -201,73 +175,56 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
     </div>
   `,
   styles: [`
-    /* ── Page shell ─────────────────────────── */
     .page {
       height: 100vh;
       overflow-y: auto;
-      background: #111;
-      color: #e0e0e0;
+      background: var(--surface-1);
+      color: var(--text);
       font-family: 'Inter', sans-serif;
       display: flex;
       flex-direction: column;
     }
 
-    /* ── Header ─────────────────────────────── */
     .page-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 1rem 1.5rem;
-      background: #1a1a1a;
-      border-bottom: 1px solid #2a2a2a;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
-    .page-header-left, .page-header-right {
-      display: flex; align-items: center; gap: 1rem;
-    }
-    .back-btn {
-      color: #6b7280; text-decoration: none; font-size: 0.875rem;
-      transition: color 0.15s;
-    }
-    .back-btn:hover { color: white; }
-    .page-title {
-      font-size: 1.5rem; font-weight: 700; color: white; margin: 0;
-    }
+
+    .page-header-left,
+    .page-header-right { display: flex; align-items: center; gap: 1rem; }
+
+    .back-btn { color: var(--text-dim); text-decoration: none; font-size: 0.875rem; transition: color var(--transition-fast); &:hover { color: white; } }
+    .page-title { font-size: 1.5rem; font-weight: 700; color: white; margin: 0; }
+
     .launcher-badge {
-      font-size: 0.75rem; padding: 3px 10px; border-radius: 999px;
-      background: rgba(75,85,99,0.3); color: #6b7280; border: 1px solid #333;
+      font-size: 0.75rem; padding: 3px 10px; border-radius: var(--radius-full);
+      background: rgba(75, 85, 99, 0.3); color: var(--text-dim); border: 1px solid var(--border-faint);
+
+      &.online { background: rgba(34, 197, 94, 0.1); color: var(--accent-green-light); border-color: rgba(34, 197, 94, 0.3); }
     }
-    .launcher-badge.online {
-      background: rgba(34,197,94,0.1); color: #4ade80;
-      border-color: rgba(34,197,94,0.3);
-    }
-    .last-update { font-size: 0.75rem; color: #4b5563; }
-    .refresh-btn {
-      display: flex; align-items: center; gap: 6px;
-      padding: 6px 14px; background: #2a2a2a; border: 1px solid #444;
-      color: #ccc; border-radius: 6px; cursor: pointer; font-size: 0.8rem;
-      transition: background 0.15s;
-    }
-    .refresh-btn:hover:not(:disabled) { background: #333; }
-    .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .last-update { font-size: 0.75rem; color: var(--text-dimmer); }
     .spinning { display: inline-block; animation: spin 0.6s linear infinite; }
 
-    /* ── Banner ──────────────────────────────── */
     .banner {
       display: flex; align-items: flex-start; gap: 0.75rem;
       margin: 1.25rem 1.5rem 0; padding: 0.875rem 1rem;
-      border-radius: 8px; font-size: 0.875rem;
-    }
-    .banner-warn {
-      background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3);
-      color: #fbbf24;
-    }
-    .banner code {
-      background: rgba(0,0,0,0.3); padding: 1px 6px;
-      border-radius: 4px; font-family: monospace;
+      border-radius: var(--radius-md); font-size: 0.875rem;
+
+      code { background: rgba(0, 0, 0, 0.3); padding: 1px 6px; border-radius: 4px; font-family: monospace; }
     }
 
-    /* ── Cards grid ──────────────────────────── */
+    .banner-warn {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: var(--accent-yellow-light);
+    }
+
     .cards {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
@@ -275,63 +232,48 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
       padding: 1.25rem 1.5rem 2rem;
     }
 
-    /* ── Card ───────────────────────────────── */
     .card {
-      background: #1e1e1e; border: 1px solid #2a2a2a;
-      border-radius: 12px; overflow: hidden;
-      display: flex; flex-direction: column; transition: border-color 0.2s;
+      background: var(--surface-4); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+      display: flex; flex-direction: column; transition: border-color var(--transition-normal);
     }
-    .card-online    { border-color: rgba(34,197,94,0.25); }
-    .card-starting  { border-color: rgba(59,130,246,0.25); }
-    .card-stopping  { border-color: rgba(245,158,11,0.25); }
-    .card-unhealthy { border-color: rgba(239,68,68,0.25); }
+
+    .card-online    { border-color: rgba(34, 197, 94, 0.4); }
+    .card-starting  { border-color: rgba(59, 130, 246, 0.4); }
+    .card-stopping  { border-color: rgba(245, 158, 11, 0.4); }
+    .card-unhealthy { border-color: rgba(239, 68, 68, 0.4); }
 
     .card-header {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 1rem 1.25rem; border-bottom: 1px solid #2a2a2a;
+      padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
     }
-    .card-header-left {
-      display: flex; align-items: flex-start; gap: 12px;
-    }
+
+    .card-header-left  { display: flex; align-items: flex-start; gap: 12px; }
+    .card-header-right { display: flex; align-items: center; gap: 8px; }
+
     .status-icon { font-size: 1.5rem; line-height: 1; width: 24px; text-align: center; }
 
-    .card-title-row {
-      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-    }
-    .card-title { font-weight: 700; font-size: 1rem; color: white; }
-    .card-desc { font-size: 0.75rem; color: #6b7280; margin-top: 3px; }
+    .card-title-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .card-title     { font-weight: 700; font-size: 1rem; color: white; }
+    .card-desc      { font-size: 0.75rem; color: var(--text-dim); margin-top: 3px; }
 
-    /* ── Type badges ─────────────────────────── */
     .type-badge {
       font-size: 0.65rem; font-weight: 700; padding: 2px 6px;
-      border-radius: 4px; border: 1px solid; text-transform: uppercase;
-      letter-spacing: 0.05em;
+      border-radius: 4px; border: 1px solid; text-transform: uppercase; letter-spacing: 0.05em;
     }
-    .badge-gui  { background: rgba(139,92,246,0.15); color: #a78bfa; border-color: rgba(139,92,246,0.3); }
-    .badge-http { background: rgba(34,197,94,0.1);   color: #4ade80; border-color: rgba(34,197,94,0.25); }
-    .badge-tcp  { background: rgba(59,130,246,0.1);  color: #60a5fa; border-color: rgba(59,130,246,0.25); }
+    .badge-gui  { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple-light); border-color: rgba(139, 92, 246, 0.3); }
+    .badge-http { background: rgba(34, 197, 94, 0.1); color: var(--accent-green-light); border-color: rgba(34, 197, 94, 0.25); }
+    .badge-tcp  { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue-light); border-color: rgba(59, 130, 246, 0.25); }
 
-    /* ── GUI notice ──────────────────────────── */
-    .gui-notice {
-      display: flex; align-items: flex-start; gap: 8px;
-      padding: 0.5rem 1.25rem;
-      background: rgba(139,92,246,0.07);
-      border-bottom: 1px solid rgba(139,92,246,0.15);
-      font-size: 0.75rem; color: #a78bfa; line-height: 1.5;
-    }
-
-    .card-header-right {
-      display: flex; align-items: center; gap: 8px;
-    }
     .port-badge {
-      font-size: 0.75rem; font-family: monospace; color: #6b7280;
-      background: #111; padding: 2px 7px; border-radius: 4px; border: 1px solid #333;
+      font-size: 0.75rem; font-family: monospace; color: var(--text-dim);
+      background: var(--surface-1); padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border-faint);
     }
-    .pid-badge { font-size: 0.7rem; font-family: monospace; color: #4b5563; }
+    .pid-badge { font-size: 0.7rem; font-family: monospace; color: var(--text-dimmer); }
 
     .status-pill {
       display: flex; align-items: center; gap: 5px;
-      padding: 3px 10px; border-radius: 999px; border: 1px solid;
+      padding: 3px 10px; border-radius: var(--radius-full); border: 1px solid;
       font-size: 0.75rem; font-weight: 600;
     }
     .pill-spinner {
@@ -340,78 +282,62 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
       animation: spin 0.7s linear infinite; flex-shrink: 0;
     }
 
-    /* ── Controls ────────────────────────────── */
+    .gui-notice {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 0.5rem 1.25rem;
+      background: rgba(139, 92, 246, 0.07);
+      border-bottom: 1px solid rgba(139, 92, 246, 0.15);
+      font-size: 0.75rem; color: var(--accent-purple-light); line-height: 1.5;
+    }
+
     .card-controls {
       display: flex; align-items: center; gap: 8px;
       padding: 0.75rem 1.25rem; background: #161616;
     }
-    .btn {
-      padding: 6px 16px; border-radius: 6px; font-size: 0.8rem;
-      font-weight: 600; border: 1px solid; cursor: pointer; transition: all 0.15s;
-    }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    .btn-start   { background: rgba(34,197,94,0.15);  border-color: rgba(34,197,94,0.4);  color: #4ade80; }
-    .btn-stop    { background: rgba(239,68,68,0.15);  border-color: rgba(239,68,68,0.4);  color: #f87171; }
-    .btn-restart { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.35); color: #fbbf24; }
-    .btn-logs    { background: transparent; border-color: #333; color: #6b7280; margin-left: auto; }
+    .log-toggle { margin-left: auto; }
 
-    .btn-start:hover:not(:disabled)   { background: rgba(34,197,94,0.25); }
-    .btn-stop:hover:not(:disabled)    { background: rgba(239,68,68,0.25); }
-    .btn-restart:hover:not(:disabled) { background: rgba(245,158,11,0.22); }
-    .btn-logs:hover { border-color: #555; color: #9ca3af; }
-
-    .btn-placeholder {
+    .pending-label {
       display: flex; align-items: center; gap: 8px;
-      color: #6b7280; font-size: 0.8rem;
+      color: var(--text-dim); font-size: 0.8rem;
     }
     .inline-spinner {
       width: 12px; height: 12px; border-radius: 50%;
-      border: 2px solid #333; border-top-color: #6b7280;
+      border: 2px solid var(--border-faint); border-top-color: var(--text-dim);
       animation: spin 0.7s linear infinite; flex-shrink: 0;
     }
 
-    /* ── Unmanaged ───────────────────────────── */
     .card-unmanaged {
       display: flex; align-items: center; gap: 8px;
       padding: 0.625rem 1.25rem; background: #161616;
-      font-size: 0.75rem; color: #4b5563;
+      font-size: 0.75rem; color: var(--text-dimmer);
     }
     .unmanaged-icon {
       width: 16px; height: 16px; border-radius: 50%;
-      background: #2a2a2a; display: flex; align-items: center;
-      justify-content: center; font-size: 0.65rem; color: #6b7280;
+      background: var(--surface-4); display: flex; align-items: center;
+      justify-content: center; font-size: 0.65rem; color: var(--text-dim);
     }
 
-    /* ── Log panel ───────────────────────────── */
-    .log-panel {
-      display: flex; flex-direction: column; border-top: 1px solid #2a2a2a;
-    }
+    .log-panel { display: flex; flex-direction: column; border-top: 1px solid var(--border-dim); }
+
     .log-toolbar {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 0.5rem 1rem; background: #111;
+      padding: 0.5rem 1rem; background: var(--surface-1);
     }
-    .log-title {
-      font-size: 0.7rem; text-transform: uppercase;
-      letter-spacing: 0.08em; color: #4b5563; font-weight: 700;
-    }
+    .log-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dimmer); font-weight: 700; }
     .log-refresh {
-      background: transparent; border: none; color: #4b5563;
-      cursor: pointer; font-size: 0.75rem; transition: color 0.15s;
+      background: transparent; border: none; color: var(--text-dimmer);
+      cursor: pointer; font-size: 0.75rem; transition: color var(--transition-fast);
+      &:hover { color: var(--text-muted); }
     }
-    .log-refresh:hover { color: #9ca3af; }
-    .log-body {
-      padding: 0.75rem 1rem; font-family: 'Courier New', monospace;
-      font-size: 0.72rem; line-height: 1.6; background: #0d0d0d;
-      max-height: 300px; overflow-y: auto; color: #9ca3af;
-    }
-    .log-line  { padding: 1px 0; }
-    .log-error { color: #f87171; }
-    .log-warn  { color: #fbbf24; }
-    .log-ok    { color: #4ade80; }
-    .log-empty { color: #374151; font-style: italic; }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .log-body {
+      padding: 0.75rem 1rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.72rem; line-height: 1.6;
+      background: var(--surface-0); max-height: 300px; overflow-y: auto; color: var(--text-muted);
+    }
+    .log-empty { color: #374151; font-style: italic; }
   `]
 })
 export class ServicesPageComponent implements OnInit, OnDestroy {
@@ -422,34 +348,15 @@ export class ServicesPageComponent implements OnInit, OnDestroy {
 
   private interval?: ReturnType<typeof setInterval>;
 
-  ngOnInit() {
-    this.poll();
-    this.interval = setInterval(() => this.poll(), 4000);
-  }
+  ngOnInit()    { this.poll(); this.interval = setInterval(() => this.poll(), 4000); }
+  ngOnDestroy() { if (this.interval) clearInterval(this.interval); }
 
-  ngOnDestroy() {
-    if (this.interval) clearInterval(this.interval);
-  }
+  statusMeta(status: string) { return STATUS_META[status] ?? STATUS_META['unknown']; }
+  isGui(id: string): boolean { return GUI_SERVICES.has(id); }
 
-  statusMeta(status: string) {
-    return STATUS_META[status] ?? STATUS_META['unknown'];
-  }
-
-  isGui(id: string): boolean {
-    return GUI_SERVICES.has(id);
-  }
-
-  isErrorLine(line: string): boolean {
-    return /error|failed|exception|traceback|fatal/i.test(line);
-  }
-
-  isWarnLine(line: string): boolean {
-    return /warn|warning|⚠/i.test(line);
-  }
-
-  isOkLine(line: string): boolean {
-    return /✅|healthy|ready|started|online|running/i.test(line);
-  }
+  isErrorLine(line: string): boolean { return /error|failed|exception|traceback|fatal/i.test(line); }
+  isWarnLine(line: string):  boolean { return /warn|warning|⚠/i.test(line); }
+  isOkLine(line: string):    boolean { return /✅|healthy|ready|started|online|running/i.test(line); }
 
   async poll() {
     this.loading.set(true);
@@ -461,21 +368,13 @@ export class ServicesPageComponent implements OnInit, OnDestroy {
       this.launcherOnline.set(true);
 
       const current = this.services();
-      const merged = fresh.map(s => {
+      this.services.set(fresh.map(s => {
         const existing = current.find(c => c.id === s.id);
-        return {
-          ...s,
-          logs:          existing?.logs ?? [],
-          logsOpen:      existing?.logsOpen ?? false,
-          actionPending: false,
-        };
-      });
+        return { ...s, logs: existing?.logs ?? [], logsOpen: existing?.logsOpen ?? false, actionPending: false };
+      }));
 
-      this.services.set(merged);
       this.lastUpdated.set(new Date().toLocaleTimeString());
-
-      // Refresh open log panels
-      for (const svc of merged) {
+      for (const svc of this.services()) {
         if (svc.logsOpen) this.refreshLogs(svc);
       }
     } catch {
@@ -489,23 +388,16 @@ export class ServicesPageComponent implements OnInit, OnDestroy {
     this.setActionPending(svc.id, true);
     try {
       await fetch(`/launcher/services/${svc.id}/start`, { method: 'POST' });
-      // Poll more frequently while starting
       await this.poll();
       setTimeout(() => this.poll(), 2000);
       setTimeout(() => this.poll(), 5000);
-    } finally {
-      this.setActionPending(svc.id, false);
-    }
+    } finally { this.setActionPending(svc.id, false); }
   }
 
   async stopService(svc: ServiceDetail) {
     this.setActionPending(svc.id, true);
-    try {
-      await fetch(`/launcher/services/${svc.id}/stop`, { method: 'POST' });
-      await this.poll();
-    } finally {
-      this.setActionPending(svc.id, false);
-    }
+    try { await fetch(`/launcher/services/${svc.id}/stop`, { method: 'POST' }); await this.poll(); }
+    finally { this.setActionPending(svc.id, false); }
   }
 
   async restartService(svc: ServiceDetail) {
@@ -514,15 +406,11 @@ export class ServicesPageComponent implements OnInit, OnDestroy {
       await fetch(`/launcher/services/${svc.id}/restart`, { method: 'POST' });
       await this.poll();
       setTimeout(() => this.poll(), 3000);
-    } finally {
-      this.setActionPending(svc.id, false);
-    }
+    } finally { this.setActionPending(svc.id, false); }
   }
 
   async toggleLogs(svc: ServiceDetail) {
-    this.services.update(svcs =>
-      svcs.map(s => s.id === svc.id ? { ...s, logsOpen: !s.logsOpen } : s)
-    );
+    this.services.update(svcs => svcs.map(s => s.id === svc.id ? { ...s, logsOpen: !s.logsOpen } : s));
     const updated = this.services().find(s => s.id === svc.id);
     if (updated?.logsOpen) await this.refreshLogs(svc);
   }
@@ -532,15 +420,11 @@ export class ServicesPageComponent implements OnInit, OnDestroy {
       const res = await fetch(`/launcher/services/${svc.id}/logs?last=150`);
       if (!res.ok) return;
       const data = await res.json();
-      this.services.update(svcs =>
-        svcs.map(s => s.id === svc.id ? { ...s, logs: data.lines } : s)
-      );
+      this.services.update(svcs => svcs.map(s => s.id === svc.id ? { ...s, logs: data.lines } : s));
     } catch { /* silent */ }
   }
 
   private setActionPending(id: string, pending: boolean) {
-    this.services.update(svcs =>
-      svcs.map(s => s.id === id ? { ...s, actionPending: pending } : s)
-    );
+    this.services.update(svcs => svcs.map(s => s.id === id ? { ...s, actionPending: pending } : s));
   }
 }

@@ -9,13 +9,13 @@ Chart.register(...registerables);
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="panel flex-1">
+    <div class="panel">
       <h2 class="panel-title">📈 Interest Graph</h2>
-      <div class="panel-content">
+      <div class="panel-content graph-content">
         <div class="chart-container">
           <canvas #chartCanvas></canvas>
         </div>
-        <pre class="log-data">{{ logText }}</pre>
+        <pre class="score-log">{{ logText }}</pre>
       </div>
     </div>
   `,
@@ -26,43 +26,33 @@ Chart.register(...registerables);
       flex: 1;
       min-height: 0;
     }
-    
-    .panel {
+
+    .graph-content {
       display: flex;
       flex-direction: column;
-      flex: 1;
-      min-height: 0;
     }
-    
-    .panel-content {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
-    }
-    
+
     .chart-container {
       flex: 1;
       position: relative;
       min-height: 120px;
+
+      canvas {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%;
+        height: 100%;
+      }
     }
-    
-    .chart-container canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-    
-    .log-data {
+
+    .score-log {
       font-size: 0.75rem;
-      color: #9ca3af;
+      color: var(--text-muted);
       flex: none;
       height: 8rem;
       overflow-y: auto;
       padding-top: 0.5rem;
-      border-top: 1px solid #444;
+      border-top: 1px solid var(--border);
       margin-top: 0.5rem;
       white-space: pre-wrap;
     }
@@ -71,24 +61,24 @@ Chart.register(...registerables);
 export class InterestGraphComponent implements AfterViewInit, OnChanges {
   @Input() scoreHistory: { score: number; source: string; text: string }[] = [];
   @ViewChild('chartCanvas') chartCanvas!: ElementRef<HTMLCanvasElement>;
-  
+
   private chart: Chart | null = null;
   logText = '[Waiting for scores...]';
-  
+
   ngAfterViewInit(): void {
     this.initChart();
   }
-  
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['scoreHistory'] && this.chart) {
       this.updateChart();
     }
   }
-  
+
   private initChart(): void {
     const ctx = this.chartCanvas.nativeElement.getContext('2d');
     if (!ctx) return;
-    
+
     this.chart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -116,24 +106,18 @@ export class InterestGraphComponent implements AfterViewInit, OnChanges {
           },
           x: { display: false }
         },
-        plugins: {
-          legend: { display: false }
-        }
+        plugins: { legend: { display: false } }
       }
     });
   }
-  
+
   private updateChart(): void {
     if (!this.chart) return;
-    
-    const labels = this.scoreHistory.map(() => '');
-    const data = this.scoreHistory.map(s => s.score);
-    
-    this.chart.data.labels = labels;
-    this.chart.data.datasets[0].data = data;
+
+    this.chart.data.labels   = this.scoreHistory.map(() => '');
+    this.chart.data.datasets[0].data = this.scoreHistory.map(s => s.score);
     this.chart.update('none');
-    
-    // Update log text
+
     const recentItems = this.scoreHistory.slice(-10).reverse();
     this.logText = recentItems
       .map(s => `${s.score.toFixed(2)} - ${s.source}: ${s.text.substring(0, 30)}...`)

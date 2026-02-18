@@ -9,11 +9,11 @@ import { BotReply } from '../../models/director.models';
   template: `
     <div class="panel">
       <h2 class="panel-title">{{ title }}</h2>
-      <div class="panel-content log-list" #scrollContainer>
-        <!-- Regular chat messages -->
+      <div class="panel-content" #scrollContainer>
+
         <ng-container *ngIf="!isNamiPanel">
-          <div 
-            *ngFor="let msg of messages" 
+          <div
+            *ngFor="let msg of messages"
             class="log-line"
             [class.mention-bg]="msg.isMention"
             [class.nami-msg]="msg.isNami"
@@ -23,11 +23,10 @@ import { BotReply } from '../../models/director.models';
           </div>
           <div *ngIf="!messages?.length" class="empty">No messages yet...</div>
         </ng-container>
-        
-        <!-- Nami replies -->
+
         <ng-container *ngIf="isNamiPanel">
-          <div 
-            *ngFor="let reply of namiReplies" 
+          <div
+            *ngFor="let reply of namiReplies"
             class="log-line nami-reply"
             [class.censored]="reply.is_censored"
             (click)="openDrawer.emit(reply)"
@@ -40,6 +39,7 @@ import { BotReply } from '../../models/director.models';
           </div>
           <div *ngIf="!namiReplies?.length" class="empty">No replies yet...</div>
         </ng-container>
+
       </div>
     </div>
   `,
@@ -50,89 +50,48 @@ import { BotReply } from '../../models/director.models';
       flex: 1;
       min-height: 0;
     }
-    
-    .panel {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
-    }
-    
-    .panel-content {
-      flex: 1;
-      overflow-y: auto;
-      min-height: 0;
-    }
-    
-    .log-list {
-      font-family: monospace;
-      font-size: 0.875rem;
-    }
-    
-    .log-line {
-      padding: 0.25rem 0.5rem;
-    }
-    
-    .username {
-      color: #a970ff;
-      font-weight: 600;
-    }
-    
-    .username.nami {
-      color: #63e2b7;
-    }
-    
+
+    .username        { color: var(--nami-purple); font-weight: 600; }
+    .username.nami   { color: var(--nami-teal); }
+
     .mention-bg {
       background: rgba(169, 112, 255, 0.1);
-      border-left: 3px solid #a970ff;
+      border-left: 3px solid var(--nami-purple);
       border-radius: 4px;
     }
-    
-    .nami-msg {
-      background: rgba(99, 226, 183, 0.05);
-    }
-    
+
+    .nami-msg { background: rgba(99, 226, 183, 0.05); }
+
     .nami-reply {
-      color: #63e2b7;
+      color: var(--nami-teal);
       cursor: pointer;
       position: relative;
+
+      &:hover { background: rgba(99, 226, 183, 0.1); }
+
+      &.censored {
+        background: rgba(239, 68, 68, 0.2);
+        border-left: 3px solid var(--accent-red);
+      }
     }
-    
-    .nami-reply:hover {
-      background: rgba(99, 226, 183, 0.1);
-    }
-    
-    .nami-reply.censored {
-      background: rgba(239, 68, 68, 0.2);
-      border-left: 3px solid #ef4444;
-    }
-    
+
     .censored-indicator {
-      color: #ef4444;
+      color: var(--accent-red);
       font-weight: 600;
       font-size: 0.75rem;
       margin-left: 0.5rem;
     }
-    
+
     .context-hint {
       opacity: 0;
       font-size: 0.75rem;
-      color: #6b7280;
+      color: var(--text-dim);
       margin-left: 0.5rem;
-      transition: opacity 0.2s;
+      transition: opacity var(--transition-normal);
     }
-    
-    .nami-reply:hover .context-hint {
-      opacity: 1;
-    }
-    
-    .empty {
-      color: #6b7280;
-      font-style: italic;
-      text-align: center;
-      padding: 1rem;
-    }
-    
+
+    .nami-reply:hover .context-hint { opacity: 1; }
+
     :host ::ng-deep .highlight-word {
       color: #d8b4fe;
       font-weight: 600;
@@ -147,23 +106,23 @@ export class ChatPanelComponent implements AfterViewChecked {
   @Input() messages: { username: string; message: string; isNami?: boolean; isMention?: boolean }[] = [];
   @Input() namiReplies: BotReply[] = [];
   @Input() isNamiPanel = false;
-  
+
   @Output() openDrawer = new EventEmitter<BotReply>();
-  
+
   @ViewChild('scrollContainer') scrollContainer!: ElementRef;
-  
+
   ngAfterViewChecked(): void {
     if (this.scrollContainer) {
       const el = this.scrollContainer.nativeElement;
       el.scrollTop = el.scrollHeight;
     }
   }
-  
+
   highlightMentions(message: string): string {
     const escaped = this.escapeHtml(message);
     return escaped.replace(/(nami|peepingnami)/gi, '<span class="highlight-word">$&</span>');
   }
-  
+
   private escapeHtml(text: string): string {
     const div = document.createElement('div');
     div.textContent = text;

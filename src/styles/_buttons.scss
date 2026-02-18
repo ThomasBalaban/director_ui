@@ -1,0 +1,54 @@
+.btn {
+  padding: 6px 16px;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.btn-start {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: var(--accent-green-light);
+
+  &:hover:not(:disabled) { background: rgba(34, 197, 94, 0.25); }
+}
+
+.btn-stop {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: var(--accent-red-light);
+
+  &:hover:not(:disabled) { background: rgba(239, 68, 68, 0.25); }
+}
+
+.btn-restart {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: var(--accent-yellow-light);
+
+  &:hover:not(:disabled) { background: rgba(245, 158, 11, 0.22); }
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border-faint);
+  color: var(--text-dim);
+
+  &:hover { border-color: #555; color: var(--text-muted); }
+}
+
+.btn-primary {
+  background: #7c3aed;
+  color: white;
+  border-color: transparent;
+
+  &:hover:not(:disabled) { background: #6d28d9; }
+}

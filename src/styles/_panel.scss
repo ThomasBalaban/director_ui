@@ -1,0 +1,26 @@
+.panel {
+  background-color: var(--surface-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  flex: 1;      
+  min-height: 0;  
+  overflow: hidden;
+}
+
+.panel-title {
+  background-color: var(--surface-5);
+  color: var(--text-white);
+  padding: 0.75rem 1.25rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.panel-content {
+  padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
