@@ -381,6 +381,7 @@ async def list_services():
             "health_check": defn.get("health_check", "tcp"),
             "status":       status,
             "pid":          _procs[name].pid if alive else None,
+            "cwd":          defn.get("cwd", UI_DIR),
         })
     return result
 

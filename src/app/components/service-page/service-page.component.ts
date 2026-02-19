@@ -8,6 +8,7 @@ interface ServiceDetail extends ServiceStatus {
   description: string;
   pid: number | null;
   health_check: string;
+  cwd?: string;
   logs?: string[];
   logsOpen?: boolean;
   actionPending?: boolean;
@@ -174,6 +175,20 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
                     </button>
                   }
                 }
+
+                <!-- VS Code button -->
+                <button
+                  class="btn btn-vscode"
+                  [disabled]="!svc.cwd"
+                  (click)="openInVscode(svc)"
+                  title="Open project folder in VS Code ({{ svc.cwd }})"
+                >
+                  <svg class="vscode-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M74.5 7.27L51.5 27.79 32.17 11.5 25 15.08v69.84l7.17 3.58L51.5 72.21 74.5 92.73 90 85.5V14.5L74.5 7.27zM74.5 74.08L54.07 50 74.5 25.92V74.08z"/>
+                  </svg>
+                  VS Code
+                </button>
+
                 <button class="btn btn-ghost log-toggle" (click)="toggleLogs(svc)">
                   {{ svc.logsOpen ? '▲ Hide logs' : '▼ Show logs' }}
                 </button>
@@ -184,6 +199,18 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
               <div class="card-unmanaged">
                 <span class="unmanaged-icon">ℹ</span>
                 Monitored only — start this service manually from its own project.
+                @if (svc.cwd) {
+                  <button
+                    class="btn btn-vscode btn-vscode--sm"
+                    (click)="openInVscode(svc)"
+                    title="Open project folder in VS Code ({{ svc.cwd }})"
+                  >
+                    <svg class="vscode-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M74.5 7.27L51.5 27.79 32.17 11.5 25 15.08v69.84l7.17 3.58L51.5 72.21 74.5 92.73 90 85.5V14.5L74.5 7.27zM74.5 74.08L54.07 50 74.5 25.92V74.08z"/>
+                    </svg>
+                    VS Code
+                  </button>
+                }
               </div>
             }
 
@@ -446,6 +473,40 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
       justify-content: center; font-size: 0.65rem; color: var(--text-dim);
     }
 
+    /* ── VS Code button ── */
+    .btn-vscode {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(0, 122, 204, 0.12);
+      border-color: rgba(0, 122, 204, 0.35);
+      color: #4fc3f7;
+
+      &:hover:not(:disabled) {
+        background: rgba(0, 122, 204, 0.22);
+        border-color: rgba(0, 122, 204, 0.6);
+        color: #81d4fa;
+      }
+
+      &:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+    }
+
+    .btn-vscode--sm {
+      padding: 3px 10px;
+      font-size: 0.72rem;
+      margin-left: auto;
+    }
+
+    .vscode-logo {
+      width: 13px;
+      height: 13px;
+      fill: currentColor;
+      flex-shrink: 0;
+    }
+
     .log-panel { display: flex; flex-direction: column; border-top: 1px solid var(--border-dim); }
     .log-toolbar {
       display: flex; justify-content: space-between; align-items: center;
@@ -486,6 +547,11 @@ export class ServicesPageComponent extends PollingComponent {
   isErrorLine(line: string): boolean { return /error|failed|exception|traceback|fatal/i.test(line); }
   isWarnLine(line: string):  boolean { return /warn|warning|⚠/i.test(line); }
   isOkLine(line: string):    boolean { return /✅|healthy|ready|started|online|running/i.test(line); }
+
+  openInVscode(svc: ServiceDetail): void {
+    if (!svc.cwd) return;
+    window.open(`vscode://file/${svc.cwd}`);
+  }
 
   override async poll() {
     this.loading.set(true);
