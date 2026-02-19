@@ -3,8 +3,7 @@
   "version": "0.0.1",
   "scripts": {
     "ng": "ng",
-    "start": "concurrently --kill-others-on-fail --names \"ng,launcher\" --prefix-colors \"cyan,magenta\" \"ng serve --port 4200\" \"python launcher.py\" \"sleep 4 && open -a Firefox http://localhost:4200\"",
-    "start:ui": "ng serve --port 4200 --open",
+    "start": "bash -c 'trap \"kill 0\" EXIT INT TERM; concurrently --kill-others --kill-others-on-fail --names \"ng,launcher\" --prefix-colors \"cyan,magenta\" \"ng serve --port 4200\" \"python launcher.py\" & wait'",    "start:ui": "ng serve --port 4200 --open",
     "start:launcher": "python launcher.py",
     "build": "ng build",
     "watch": "ng build --watch --configuration development"

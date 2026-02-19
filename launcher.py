@@ -104,10 +104,12 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
     "director": {
         "label":        "Director Engine",
         "description":  "Brain — drives directives, scoring, and state",
+        "cmd":          [_conda_python("director-engine"), os.path.join(PARENT_DIR, "director_engine", "main.py")],
+        "cwd":          os.path.join(PARENT_DIR, "director_engine"),
         "port":         8002,
         "health_check": "http",
         "health_url":   "http://localhost:8002/health",
-        "managed":      False,
+        "managed":      True,
     },
     "tts_service": {
         "label":        "TTS Service",
@@ -254,7 +256,7 @@ async def start_service(name: str) -> Dict[str, Any]:
         ).start()
 
         # Boot-time allowances per service
-        retries = {"nami": 60, "tts_service": 20, "desktop_monitor": 40}.get(name, 20)
+        retries = {"nami": 60, "tts_service": 20, "desktop_monitor": 40, "director": 60}.get(name, 20)
         healthy = await _wait_for_health(name, retries=retries)
 
         if healthy:
@@ -326,6 +328,7 @@ async def lifespan(app: FastAPI):
     http_client = httpx.AsyncClient()
     print(f"🚀 Launcher ready on :{LAUNCHER_PORT}")
     print(f"   Desktop Monitor Python : {_conda_python('gemini-screen-watcher')}")
+    print(f"   Director Engine Python : {_conda_python('director-engine')}")
     print(f"   Nami / TTS Python      : {_conda_python('nami')}")
     for name, defn in SERVICE_DEFS.items():
         if not defn.get("managed"):

@@ -2,15 +2,8 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { DirectorService } from '../../services/director.service';
-import {
-  DirectorState,
-  ScoredEvent,
-  TwitchMessage,
-  BotReply,
-  Streamer,
-  AiContextSuggestion
-} from '../../models/director.models';
+import { DirectorService, ChatMessage, AudioLogEntry, ScoreEntry } from '../../shared/services/dashboard.service';
+import { DirectorState, BotReply, Streamer } from '../../models/director.models';
 
 // Child Components
 import { HeaderComponent } from '../header/header.component';
@@ -80,31 +73,28 @@ import { ContextDrawerComponent } from '../context-drawer/context-drawer.compone
   `]
 })
 export class DashboardComponent implements OnInit, OnDestroy {
+  // All data comes directly from the service's BehaviorSubjects
   directorState: DirectorState | null = null;
   isConnected = false;
   streamers: Streamer[] = [];
 
   visionLog:  string[] = [];
   spokenLog:  string[] = [];
-  audioLog:   { text: string; sessionId?: string; isPartial?: boolean }[] = [];
-
-  chatMessages: { username: string; message: string; isNami?: boolean; isMention?: boolean }[] = [];
+  audioLog:   AudioLogEntry[] = [];
+  chatMessages: ChatMessage[] = [];
   namiReplies:  BotReply[] = [];
-
-  scoreHistory: { score: number; source: string; text: string }[] = [];
+  scoreHistory: ScoreEntry[] = [];
 
   drawerOpen = false;
   drawerData: BotReply | null = null;
 
-  streamerLocked  = false;
-  contextLocked   = false;
-  manualContext   = '';
+  streamerLocked   = false;
+  contextLocked    = false;
+  manualContext    = '';
   selectedStreamer = 'peepingotter';
-
   pendingAiContext: string | null = null;
 
   private subscriptions = new Subscription();
-  private readonly MAX_LOG_ITEMS = 50;
 
   constructor(private directorService: DirectorService) {}
 
@@ -119,9 +109,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private setupSubscriptions(): void {
     this.subscriptions.add(
-      this.directorService.connectionStatus$.subscribe(connected => {
-        this.isConnected = connected;
-      })
+      this.directorService.connectionStatus$.subscribe(c => this.isConnected = c)
     );
 
     this.subscriptions.add(
@@ -136,92 +124,74 @@ export class DashboardComponent implements OnInit, OnDestroy {
       })
     );
 
+    // Read accumulated logs directly from service — already persisted
+    this.subscriptions.add(this.directorService.visionLog$.subscribe(log => this.visionLog = log));
+    this.subscriptions.add(this.directorService.spokenLog$.subscribe(log => this.spokenLog = log));
+    this.subscriptions.add(this.directorService.audioLog$.subscribe(log => this.audioLog = log));
+    this.subscriptions.add(this.directorService.chatMessages$.subscribe(msgs => this.chatMessages = msgs));
+    this.subscriptions.add(this.directorService.namiReplies$.subscribe(replies => this.namiReplies = replies));
+    this.subscriptions.add(this.directorService.scoreHistory$.subscribe(history => this.scoreHistory = history));
+
+    // Pending AI context
     this.subscriptions.add(
-      this.directorService.visionContext$.subscribe(data => this.addToLog(this.visionLog, data.context))
+      this.directorService.pendingAiContext$.subscribe(ctx => {
+        if (ctx === null) {
+          this.pendingAiContext = null;
+          return;
+        }
+        if (!this.contextLocked) {
+          // Auto-accept when unlocked
+          this.manualContext = ctx;
+          this.directorService.clearPendingAiContext();
+        } else {
+          this.pendingAiContext = ctx;
+        }
+      })
     );
-
-    this.subscriptions.add(
-      this.directorService.spokenWordContext$.subscribe(data => this.addToLog(this.spokenLog, data.context))
-    );
-
-    this.subscriptions.add(
-      this.directorService.audioContext$.subscribe(data => this.handleAudioContext(data))
-    );
-
-    this.subscriptions.add(
-      this.directorService.twitchMessage$.subscribe(data => this.addChatMessage(data))
-    );
-
-    this.subscriptions.add(
-      this.directorService.botReply$.subscribe(data => this.handleBotReply(data))
-    );
-
-    this.subscriptions.add(
-      this.directorService.eventScored$.subscribe(data => this.addScoreData(data))
-    );
-
-    this.subscriptions.add(
-      this.directorService.aiSuggestion$.subscribe(data => this.handleAiSuggestion(data))
-    );
-  }
-
-  private addToLog(log: string[], item: string): void {
-    log.push(item);
-    if (log.length > this.MAX_LOG_ITEMS) log.shift();
-  }
-
-  private handleAudioContext(data: { context: string; is_partial: boolean; session_id?: string }): void {
-    if (data.is_partial && data.session_id) {
-      const existing = this.audioLog.find(a => a.sessionId === data.session_id);
-      if (existing) { existing.text = data.context; existing.isPartial = true; }
-      else this.audioLog.push({ text: data.context, sessionId: data.session_id, isPartial: true });
-    } else {
-      this.audioLog.push({ text: data.context, sessionId: data.session_id, isPartial: false });
-    }
-    if (this.audioLog.length > this.MAX_LOG_ITEMS) this.audioLog.shift();
-  }
-
-  private addChatMessage(data: TwitchMessage): void {
-    const isMention = /(nami|peepingnami)/gi.test(data.message);
-    this.chatMessages.push({ username: data.username, message: data.message, isMention });
-    if (this.chatMessages.length > this.MAX_LOG_ITEMS) this.chatMessages.shift();
-  }
-
-  private handleBotReply(data: BotReply): void {
-    this.namiReplies.push(data);
-    this.chatMessages.push({ username: 'Nami', message: data.reply, isNami: true });
-    if (this.namiReplies.length  > this.MAX_LOG_ITEMS) this.namiReplies.shift();
-    if (this.chatMessages.length > this.MAX_LOG_ITEMS) this.chatMessages.shift();
-  }
-
-  private addScoreData(data: ScoredEvent): void {
-    this.scoreHistory.push({ score: data.score, source: data.source, text: data.text });
-    if (this.scoreHistory.length > 50) this.scoreHistory.shift();
-  }
-
-  private handleAiSuggestion(data: AiContextSuggestion): void {
-    if (!data.context) return;
-    if (!this.contextLocked) this.manualContext = data.context;
-    else this.pendingAiContext = data.context;
   }
 
   // === Child component event handlers ===
 
-  onStreamerChange(streamerId: string):  void { this.selectedStreamer = streamerId; this.directorService.setStreamer(streamerId); }
-  onContextSubmit(context: string):      void { this.manualContext = context; this.directorService.setManualContext(context); }
-  onStreamerLockToggle():                void { this.streamerLocked = !this.streamerLocked; this.directorService.setStreamerLock(this.streamerLocked); }
-  onContextLockToggle():                 void { this.contextLocked  = !this.contextLocked;  this.directorService.setContextLock(this.contextLocked); }
+  onStreamerChange(streamerId: string): void {
+    this.selectedStreamer = streamerId;
+    this.directorService.setStreamer(streamerId);
+  }
+
+  onContextSubmit(context: string): void {
+    this.manualContext = context;
+    this.directorService.setManualContext(context);
+  }
+
+  onStreamerLockToggle(): void {
+    this.streamerLocked = !this.streamerLocked;
+    this.directorService.setStreamerLock(this.streamerLocked);
+  }
+
+  onContextLockToggle(): void {
+    this.contextLocked = !this.contextLocked;
+    this.directorService.setContextLock(this.contextLocked);
+  }
 
   onAcceptAiSuggestion(): void {
     if (this.pendingAiContext) {
       this.manualContext = this.pendingAiContext;
       this.directorService.setManualContext(this.pendingAiContext);
+      this.directorService.clearPendingAiContext();
       this.pendingAiContext = null;
     }
   }
 
-  onOpenDrawer(reply: BotReply): void { this.drawerData = reply; this.drawerOpen = true; }
-  onCloseDrawer():               void { this.drawerOpen = false; this.drawerData = null; }
+  onOpenDrawer(reply: BotReply): void {
+    this.drawerData = reply;
+    this.drawerOpen = true;
+  }
 
-  ngOnDestroy(): void { this.subscriptions.unsubscribe(); }
+  onCloseDrawer(): void {
+    this.drawerOpen = false;
+    this.drawerData = null;
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
 }
