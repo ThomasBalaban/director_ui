@@ -88,6 +88,16 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "health_url":   "http://localhost:8004/health",
         "managed":      True,
     },
+    "twitch_service": {
+        "label":        "Twitch Service",
+        "description":  "Twitch chat, polls, predictions, redeems",
+        "cmd":          [conda_python("nami"), os.path.join(PARENT_DIR, "twitch_service", "main.py")],
+        "cwd":          os.path.join(PARENT_DIR, "twitch_service"),
+        "port":         8005,
+        "health_check": "http",
+        "health_url":   "http://localhost:8005/health",
+        "managed":      True,
+    },
     "nami": {
         "label":        "Nami",
         "description":  "LLM + Twitch bot — the voice",
@@ -105,4 +115,5 @@ BOOT_RETRIES: Dict[str, int] = {
     "tts_service":     20,
     "desktop_monitor": 40,
     "director":        60,
+    "twitch_service":  30,
 }

@@ -37,6 +37,11 @@
     "secure": false,
     "pathRewrite": { "^/tts": "" }
   },
+  "/twitch": {
+    "target": "http://localhost:8005",
+    "secure": false,
+    "pathRewrite": { "^/twitch": "" }
+  },
   "/launcher": {
     "target": "http://localhost:8010",
     "secure": false
