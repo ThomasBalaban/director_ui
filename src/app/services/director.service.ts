@@ -1,3 +1,4 @@
+// thomasbalaban/director_ui/src/app/services/director.service.ts
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
@@ -14,6 +15,11 @@ import {
   Streamer
 } from '../models/director.models';
 
+// Match Dashboard component expectations
+export interface ChatMessage { username: string; message: string; timestamp: number; }
+export interface AudioLogEntry { text: string; is_partial: boolean; timestamp: number; }
+export interface ScoreEntry { timestamp: number; score: number; }
+
 @Injectable({
   providedIn: 'root'
 })
@@ -22,158 +28,94 @@ export class DirectorService implements OnDestroy {
 
   // === State Subjects ===
   private directorStateSubject = new BehaviorSubject<DirectorState | null>(null);
-  private visionContextSubject = new Subject<VisionContext>();
-  private spokenWordContextSubject = new Subject<SpokenWordContext>();
-  private audioContextSubject = new Subject<AudioContext>();
-  private twitchMessageSubject = new Subject<TwitchMessage>();
-  private botReplySubject = new Subject<BotReply>();
-  private eventScoredSubject = new Subject<ScoredEvent>();
-  private aiSuggestionSubject = new Subject<AiContextSuggestion>();
   private connectionStatusSubject = new BehaviorSubject<boolean>(false);
+  
+  // === Persistent Logs (For UI Panels) ===
+  private visionLogSubject = new BehaviorSubject<string[]>([]);
+  private spokenLogSubject = new BehaviorSubject<string[]>([]);
+  private audioLogSubject  = new BehaviorSubject<AudioLogEntry[]>([]);
+  private chatMessagesSubject = new BehaviorSubject<ChatMessage[]>([]);
+  private namiRepliesSubject  = new BehaviorSubject<BotReply[]>([]);
+  private scoreHistorySubject = new BehaviorSubject<ScoreEntry[]>([]);
+  private pendingAiContextSubject = new BehaviorSubject<string | null>(null);
 
   // === Public Observables ===
   public directorState$ = this.directorStateSubject.asObservable();
-  public visionContext$ = this.visionContextSubject.asObservable();
-  public spokenWordContext$ = this.spokenWordContextSubject.asObservable();
-  public audioContext$ = this.audioContextSubject.asObservable();
-  public twitchMessage$ = this.twitchMessageSubject.asObservable();
-  public botReply$ = this.botReplySubject.asObservable();
-  public eventScored$ = this.eventScoredSubject.asObservable();
-  public aiSuggestion$ = this.aiSuggestionSubject.asObservable();
   public connectionStatus$ = this.connectionStatusSubject.asObservable();
+  
+  public visionLog$ = this.visionLogSubject.asObservable();
+  public spokenLog$ = this.spokenLogSubject.asObservable();
+  public audioLog$  = this.audioLogSubject.asObservable();
+  public chatMessages$ = this.chatMessagesSubject.asObservable();
+  public namiReplies$  = this.namiRepliesSubject.asObservable();
+  public scoreHistory$ = this.scoreHistorySubject.asObservable();
+  public pendingAiContext$ = this.pendingAiContextSubject.asObservable();
 
   constructor() {
-    this.socket = io(environment.socketUrl, {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000
+    this.socket = io(environment.socketUrl || 'http://localhost:8002', {
+      transports: ['websocket', 'polling']
     });
 
     this.setupSocketListeners();
   }
 
   private setupSocketListeners(): void {
-    // Connection events
-    this.socket.on('connect', () => {
-      console.log('[DirectorService] Connected to Director Engine');
-      this.connectionStatusSubject.next(true);
-    });
+    this.socket.on('connect', () => this.connectionStatusSubject.next(true));
+    this.socket.on('disconnect', () => this.connectionStatusSubject.next(false));
 
-    this.socket.on('disconnect', () => {
-      console.log('[DirectorService] Disconnected from Director Engine');
-      this.connectionStatusSubject.next(false);
-    });
-
-    this.socket.on('connect_error', (error: Error) => {
-      console.error('[DirectorService] Connection error:', error);
-      this.connectionStatusSubject.next(false);
-    });
-
-    // Director state updates
-    this.socket.on('director_state', (data: DirectorState) => {
-      this.directorStateSubject.next(data);
-    });
-
-    // Context streams
+    // Handle Vision Data
     this.socket.on('vision_context', (data: VisionContext) => {
-      this.visionContextSubject.next(data);
+      const current = this.visionLogSubject.value;
+      this.visionLogSubject.next([...current.slice(-49), data.context]);
     });
 
+    // Handle Mic Data (Fixes "nothing from mic" issue)
     this.socket.on('spoken_word_context', (data: SpokenWordContext) => {
-      this.spokenWordContextSubject.next(data);
+      const current = this.spokenLogSubject.value;
+      this.spokenLogSubject.next([...current.slice(-49), data.context]);
     });
 
+    // Handle Desktop Audio
     this.socket.on('audio_context', (data: AudioContext) => {
-      this.audioContextSubject.next(data);
+      const current = this.audioLogSubject.value;
+      this.audioLogSubject.next([...current.slice(-49), {
+        text: data.context,
+        is_partial: data.is_partial,
+        timestamp: Date.now()
+      }]);
     });
 
-    // Chat events
+    // Handle Chat
     this.socket.on('twitch_message', (data: TwitchMessage) => {
-      this.twitchMessageSubject.next(data);
+      const current = this.chatMessagesSubject.value;
+      this.chatMessagesSubject.next([...current.slice(-99), {
+        ...data,
+        timestamp: Date.now()
+      }]);
     });
 
     this.socket.on('bot_reply', (data: BotReply) => {
-      this.botReplySubject.next(data);
+      const current = this.namiRepliesSubject.value;
+      this.namiRepliesSubject.next([...current.slice(-49), data]);
     });
 
-    // Scoring events
-    this.socket.on('event_scored', (data: ScoredEvent) => {
-      this.eventScoredSubject.next(data);
-    });
-
-    // AI suggestions
-    this.socket.on('ai_context_suggestion', (data: AiContextSuggestion) => {
-      this.aiSuggestionSubject.next(data);
+    this.socket.on('director_state', (data: DirectorState) => {
+      this.directorStateSubject.next(data);
     });
   }
 
-  // === Emit Methods (Send to Backend) ===
+  // === Control Methods ===
+  setStreamer(streamer_id: string): void { this.socket.emit('set_streamer', { streamer_id }); }
+  setManualContext(context: string): void { this.socket.emit('set_manual_context', { context }); }
+  setStreamerLock(locked: boolean): void { this.socket.emit('set_streamer_lock', { locked }); }
+  setContextLock(locked: boolean): void { this.socket.emit('set_context_lock', { locked }); }
+  clearPendingAiContext(): void { this.pendingAiContextSubject.next(null); }
 
-  setStreamer(streamerId: string): void {
-    this.socket.emit('set_streamer', { streamer_id: streamerId });
-    console.log('[DirectorService] Set streamer:', streamerId);
-  }
-
-  setManualContext(context: string): void {
-    this.socket.emit('set_manual_context', { context });
-    console.log('[DirectorService] Set context:', context);
-  }
-
-  setStreamerLock(locked: boolean): void {
-    this.socket.emit('set_streamer_lock', { locked });
-    console.log('[DirectorService] Streamer lock:', locked);
-  }
-
-  setContextLock(locked: boolean): void {
-    this.socket.emit('set_context_lock', { locked });
-    console.log('[DirectorService] Context lock:', locked);
-  }
-
-  sendEvent(sourceStr: string, text: string, metadata: Record<string, unknown> = {}, username?: string): void {
-    this.socket.emit('event', {
-      source_str: sourceStr,
-      text,
-      metadata,
-      username
-    });
-  }
-
-  // === HTTP API Methods ===
   async fetchStreamers(): Promise<Streamer[]> {
-    try {
-      const response = await fetch('/assets/streamers.json');
-      const data = await response.json();
-      return data.streamers || [];
-    } catch {
-      return [{ id: 'peepingotter', display_name: 'PeepingOtter' }];
-    }
-  }
-
-  async fetchBreadcrumbs(): Promise<{ formatted_context: string }> {
-    try {
-      const response = await fetch(`/breadcrumbs`);
-      return await response.json();
-    } catch (error) {
-      console.error('[DirectorService] Failed to fetch breadcrumbs:', error);
-      return { formatted_context: '[Error fetching context]' };
-    }
-  }
-
-  async fetchSummaryData(): Promise<unknown> {
-    try {
-      const response = await fetch(`/summary_data`);
-      return await response.json();
-    } catch (error) {
-      console.error('[DirectorService] Failed to fetch summary data:', error);
-      return null;
-    }
+    return [{ id: 'peepingotter', display_name: 'PeepingOtter' }];
   }
 
   ngOnDestroy(): void {
-    if (this.socket) {
-      this.socket.disconnect();
-    }
+    if (this.socket) this.socket.disconnect();
   }
 }

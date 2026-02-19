@@ -59,13 +59,14 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "health_url":   "http://localhost:8001/health",
         "managed":      True,
     },
-    "desktop_monitor": {
+   "desktop_monitor": {
         "label":        "Desktop Monitor",
         "description":  "Gemini screen watcher — vision + audio transcription",
         "cmd":          [conda_python("gemini-screen-watcher"), os.path.join(PARENT_DIR, "desktop_mon_gemini", "main.py")],
         "cwd":          os.path.join(PARENT_DIR, "desktop_mon_gemini"),
-        "port":         8003,
-        "health_check": "tcp",
+        "port":         8003, 
+        "health_check": "http",
+        "health_url":   "http://localhost:8005/health",
         "managed":      True,
     },
     "director": {
