@@ -101,7 +101,7 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
     },
     "nami": {
         "label":        "Nami",
-        "description":  "LLM + Twitch bot — the voice",
+        "description":  "LLM + Twitch bot",
         "cmd":          [conda_python("nami"), "-m", "nami.main"],
         "cwd":          PARENT_DIR,
         "port":         8000,
