@@ -12,7 +12,7 @@ import { NamiStatusComponent } from '../nami-status/nami-status.component';
     <header class="header">
       <div class="header-top">
         <h1 class="title">
-          Director Engine
+          Nami :)
           <span class="subtitle">| Context Monitor</span>
           <span class="connection-dot" [class.connected]="isConnected"></span>
         </h1>

@@ -73,9 +73,9 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "description":  "Brain — drives directives, scoring, and state",
         "cmd":          [conda_python("director-engine"), os.path.join(PARENT_DIR, "director_engine", "main.py")],
         "cwd":          os.path.join(PARENT_DIR, "director_engine"),
-        "port":         8002,
+        "port":         8006,          # Changed from 8002
         "health_check": "http",
-        "health_url":   "http://localhost:8002/health",
+        "health_url":   "http://localhost:8006/health",  # Changed
         "managed":      True,
     },
     "tts_service": {
@@ -107,10 +107,20 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "health_check": "tcp",
         "managed":      True,
     },
+    "hub": {
+        "label":        "Central Hub",
+        "description":  "Socket.IO relay hub — all services connect through here",
+        "cmd":          [sys.executable, os.path.join(PARENT_DIR, "hub_service", "main.py")],
+        "cwd":          os.path.join(PARENT_DIR, "hub_service"),
+        "port":         8002,
+        "health_check": "tcp",
+        "managed":      True,
+    },
 }
 
 # Boot-time health check retry counts per service
 BOOT_RETRIES: Dict[str, int] = {
+    "hub":             15,
     "nami":            60,
     "tts_service":     20,
     "desktop_monitor": 40,
