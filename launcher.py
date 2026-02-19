@@ -33,15 +33,11 @@ import uvicorn
 UI_DIR     = os.path.dirname(os.path.abspath(__file__))   # director_ui/
 PARENT_DIR = os.path.dirname(UI_DIR)                       # parent folder
 
-LAUNCHER_PORT = 8010  # Changed from 8003 to avoid conflict with desktop_mon WebSocket
+LAUNCHER_PORT = 8010
 
 # ─────────────────────────────────────────────
-# Service definitions
+# Helpers
 # ─────────────────────────────────────────────
-#
-# health_check: "http"  → GET {health_url}, expects status < 500
-#               "tcp"   → asyncio TCP connect to {host}:{port}
-#
 
 def _conda_python(env_name: str) -> str:
     """
@@ -49,16 +45,14 @@ def _conda_python(env_name: str) -> str:
     On macOS uses python.app (framework build) so tkinter works.
     Falls back to sys.executable if the env can't be found.
     """
-    # CONDA_EXE is most reliable: e.g. /Users/x/miniconda3/bin/conda
     conda_exe = os.environ.get("CONDA_EXE", "")
     if conda_exe:
         conda_root = os.path.dirname(os.path.dirname(conda_exe))
     else:
-        # CONDA_PREFIX can be base (/miniconda3) or named (/miniconda3/envs/foo)
         conda_prefix = os.environ.get("CONDA_PREFIX", "")
         if conda_prefix:
             parts = conda_prefix.split(os.sep + "envs" + os.sep)
-            conda_root = parts[0]  # always the miniconda3/anaconda3 root
+            conda_root = parts[0]
         else:
             conda_root = os.path.expanduser("~/miniconda3")
             if not os.path.isdir(conda_root):
@@ -83,6 +77,9 @@ def _conda_python(env_name: str) -> str:
     return sys.executable
 
 
+# ─────────────────────────────────────────────
+# Service definitions
+# ─────────────────────────────────────────────
 
 SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
     "prompt_service": {
@@ -100,8 +97,8 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "description":  "Gemini screen watcher — vision + audio transcription",
         "cmd":          [_conda_python("gemini-screen-watcher"), os.path.join(PARENT_DIR, "desktop_mon_gemini", "main.py")],
         "cwd":          os.path.join(PARENT_DIR, "desktop_mon_gemini"),
-        "port":         8003,          # WebSocket port the desktop monitor opens
-        "health_check": "tcp",         # No HTTP endpoint — probe the WS port instead
+        "port":         8003,
+        "health_check": "tcp",
         "managed":      True,
     },
     "director": {
@@ -112,12 +109,24 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "health_url":   "http://localhost:8002/health",
         "managed":      False,
     },
+    "tts_service": {
+        "label":        "TTS Service",
+        "description":  "Azure TTS + ngrok — audio generation and playback",
+        "cmd":          [_conda_python("nami"), os.path.join(PARENT_DIR, "tts_service", "main.py")],
+        "cwd":          os.path.join(PARENT_DIR, "tts_service"),
+        "port":         8004,
+        "health_check": "http",
+        "health_url":   "http://localhost:8004/health",
+        "managed":      True,
+    },
     "nami": {
         "label":        "Nami",
-        "description":  "LLM + TTS — the voice",
+        "description":  "LLM + Twitch bot — the voice",
+        "cmd":          [_conda_python("nami"), "-m", "nami.main"],
+        "cwd":          PARENT_DIR,
         "port":         8000,
         "health_check": "tcp",
-        "managed":      False,
+        "managed":      True,
     },
 }
 
@@ -152,7 +161,7 @@ async def _tcp_health(host: str, port: int, timeout: float = 1.5) -> bool:
     try:
         reader, writer = await asyncio.wait_for(
             asyncio.open_connection(host, port),
-            timeout=timeout
+            timeout=timeout,
         )
         writer.close()
         try:
@@ -165,19 +174,15 @@ async def _tcp_health(host: str, port: int, timeout: float = 1.5) -> bool:
 
 
 async def _health_check(name: str) -> bool:
-    """Dispatch to the right health check strategy for a service."""
-    defn = SERVICE_DEFS[name]
+    defn     = SERVICE_DEFS[name]
     strategy = defn.get("health_check", "tcp")
-
     if strategy == "http":
         url = defn.get("health_url", f"http://localhost:{defn['port']}/health")
         return await _http_health(url)
-    else:
-        return await _tcp_health("127.0.0.1", defn["port"])
+    return await _tcp_health("127.0.0.1", defn["port"])
 
 
 async def _wait_for_health(name: str, retries: int = 30, interval: float = 0.5) -> bool:
-    """Poll until healthy or retries exhausted."""
     for _ in range(retries):
         if await _health_check(name):
             return True
@@ -186,7 +191,7 @@ async def _wait_for_health(name: str, retries: int = 30, interval: float = 0.5) 
 
 
 # ─────────────────────────────────────────────
-# Helpers
+# Log helpers
 # ─────────────────────────────────────────────
 
 def _append_log(name: str, line: str) -> None:
@@ -222,8 +227,10 @@ async def start_service(name: str) -> Dict[str, Any]:
     if name in _starting:
         return {"ok": False, "reason": "already_starting"}
 
-    entry = defn["cmd"][-1]
-    if not os.path.exists(entry):
+    # For module invocations (-m pkg.module) skip the file-exists check
+    is_module = "-m" in defn["cmd"]
+    entry     = defn["cmd"][-1]
+    if not is_module and not os.path.exists(entry):
         msg = f"Entry point not found: {entry}"
         _append_log(name, f"❌ {msg}")
         return {"ok": False, "reason": msg}
@@ -246,9 +253,9 @@ async def start_service(name: str) -> Dict[str, Any]:
             target=_stream_output, args=(name, p.stdout), daemon=True
         ).start()
 
-        # GUI apps take longer to start — give desktop monitor more time
-        max_retries = 40 if name == "desktop_monitor" else 20
-        healthy = await _wait_for_health(name, retries=max_retries)
+        # Boot-time allowances per service
+        retries = {"nami": 60, "tts_service": 20, "desktop_monitor": 40}.get(name, 20)
+        healthy = await _wait_for_health(name, retries=retries)
 
         if healthy:
             _append_log(name, f"✅ {defn['label']} ready on port {defn['port']}")
@@ -258,7 +265,6 @@ async def start_service(name: str) -> Dict[str, Any]:
             _procs[name] = None
             return {"ok": False, "reason": "process_died", "code": p.returncode}
         else:
-            # Still running but health check timed out — treat as running
             _append_log(name, f"⚠️ Running (PID {p.pid}) but health check timed out — may still be loading")
             return {"ok": True, "pid": p.pid, "warning": "health_timeout"}
 
@@ -319,10 +325,17 @@ async def lifespan(app: FastAPI):
     global http_client
     http_client = httpx.AsyncClient()
     print(f"🚀 Launcher ready on :{LAUNCHER_PORT}")
-    print(f"   Desktop Monitor Python: {_conda_python('gemini-screen-watcher')}")
+    print(f"   Desktop Monitor Python : {_conda_python('gemini-screen-watcher')}")
+    print(f"   Nami / TTS Python      : {_conda_python('nami')}")
     for name, defn in SERVICE_DEFS.items():
-        if defn.get("managed"):
-            entry = defn["cmd"][-1]
+        if not defn.get("managed"):
+            continue
+        is_module = "-m" in defn["cmd"]
+        if is_module:
+            module = defn["cmd"][defn["cmd"].index("-m") + 1]
+            print(f"   ✅ {defn['label']:20s} → -m {module}  (cwd: {defn.get('cwd', UI_DIR)})")
+        else:
+            entry  = defn["cmd"][-1]
             exists = os.path.exists(entry)
             print(f"   {'✅' if exists else '❌'} {defn['label']:20s} → {entry}")
     yield
@@ -357,14 +370,14 @@ async def list_services():
         else:                      status = "offline"
 
         result.append({
-            "id":          name,
-            "label":       defn["label"],
-            "description": defn.get("description", ""),
-            "port":        defn["port"],
-            "managed":     defn.get("managed", False),
+            "id":           name,
+            "label":        defn["label"],
+            "description":  defn.get("description", ""),
+            "port":         defn["port"],
+            "managed":      defn.get("managed", False),
             "health_check": defn.get("health_check", "tcp"),
-            "status":      status,
-            "pid":         _procs[name].pid if alive else None,
+            "status":       status,
+            "pid":          _procs[name].pid if alive else None,
         })
     return result
 

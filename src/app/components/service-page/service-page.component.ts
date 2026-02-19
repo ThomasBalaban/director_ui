@@ -13,6 +13,14 @@ interface ServiceDetail extends ServiceStatus {
   actionPending?: boolean;
 }
 
+interface AudioDevice {
+  id: number;
+  name: string;
+  channels: number;
+  default_samplerate: number;
+  is_active: boolean;
+}
+
 const STATUS_META: Record<string, { label: string; color: string; icon: string }> = {
   online:    { label: 'Online',    color: '#22c55e', icon: '●' },
   offline:   { label: 'Offline',   color: '#4b5563', icon: '○' },
@@ -102,6 +110,38 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
                 </span>
               </div>
             </div>
+
+            <!-- TTS Device Picker — shown when tts_service is online -->
+            @if (svc.id === 'tts_service' && svc.status === 'online') {
+              <div class="device-picker">
+                <div class="device-picker-header">
+                  <span class="device-picker-label">🔊 Output Device</span>
+                  @if (deviceLoading()) {
+                    <span class="device-loading">Loading…</span>
+                  }
+                </div>
+
+                @if (audioDevices().length) {
+                  <div class="device-list">
+                    @for (dev of audioDevices(); track dev.id) {
+                      <button
+                        class="device-btn"
+                        [class.device-active]="dev.id === activeDeviceId()"
+                        (click)="selectDevice(dev.id)"
+                        [disabled]="deviceSetting()"
+                        [title]="dev.name + ' — ' + dev.channels + 'ch @ ' + dev.default_samplerate + 'Hz'"
+                      >
+                        <span class="device-check">{{ dev.id === activeDeviceId() ? '✓' : '' }}</span>
+                        <span class="device-name">{{ dev.name }}</span>
+                        <span class="device-meta">{{ dev.default_samplerate / 1000 | number:'1.0-0' }}kHz</span>
+                      </button>
+                    }
+                  </div>
+                } @else if (!deviceLoading()) {
+                  <div class="device-empty">No output devices found</div>
+                }
+              </div>
+            }
 
             @if (isGui(svc.id) && svc.managed) {
               <div class="gui-notice">
@@ -205,7 +245,6 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
     .launcher-badge {
       font-size: 0.75rem; padding: 3px 10px; border-radius: var(--radius-full);
       background: rgba(75, 85, 99, 0.3); color: var(--text-dim); border: 1px solid var(--border-faint);
-
       &.online { background: rgba(34, 197, 94, 0.1); color: var(--accent-green-light); border-color: rgba(34, 197, 94, 0.3); }
     }
 
@@ -216,13 +255,11 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
       display: flex; align-items: flex-start; gap: 0.75rem;
       margin: 1.25rem 1.5rem 0; padding: 0.875rem 1rem;
       border-radius: var(--radius-md); font-size: 0.875rem;
-
-      code { background: rgba(0, 0, 0, 0.3); padding: 1px 6px; border-radius: 4px; font-family: monospace; }
+      code { background: rgba(0,0,0,0.3); padding: 1px 6px; border-radius: 4px; font-family: monospace; }
     }
-
     .banner-warn {
-      background: rgba(245, 158, 11, 0.1);
-      border: 1px solid rgba(245, 158, 11, 0.3);
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.3);
       color: var(--accent-yellow-light);
     }
 
@@ -238,22 +275,19 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
       border-radius: var(--radius-lg); overflow: hidden;
       display: flex; flex-direction: column; transition: border-color var(--transition-normal);
     }
-
-    .card-online    { border-color: rgba(34, 197, 94, 0.4); }
-    .card-starting  { border-color: rgba(59, 130, 246, 0.4); }
-    .card-stopping  { border-color: rgba(245, 158, 11, 0.4); }
-    .card-unhealthy { border-color: rgba(239, 68, 68, 0.4); }
+    .card-online    { border-color: rgba(34,197,94,0.4); }
+    .card-starting  { border-color: rgba(59,130,246,0.4); }
+    .card-stopping  { border-color: rgba(245,158,11,0.4); }
+    .card-unhealthy { border-color: rgba(239,68,68,0.4); }
 
     .card-header {
       display: flex; justify-content: space-between; align-items: center;
       padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
     }
-
     .card-header-left  { display: flex; align-items: flex-start; gap: 12px; }
     .card-header-right { display: flex; align-items: center; gap: 8px; }
 
     .status-icon { font-size: 1.5rem; line-height: 1; width: 24px; text-align: center; }
-
     .card-title-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .card-title     { font-weight: 700; font-size: 1rem; color: white; }
     .card-desc      { font-size: 0.75rem; color: var(--text-dim); margin-top: 3px; }
@@ -262,9 +296,9 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
       font-size: 0.65rem; font-weight: 700; padding: 2px 6px;
       border-radius: 4px; border: 1px solid; text-transform: uppercase; letter-spacing: 0.05em;
     }
-    .badge-gui  { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple-light); border-color: rgba(139, 92, 246, 0.3); }
-    .badge-http { background: rgba(34, 197, 94, 0.1); color: var(--accent-green-light); border-color: rgba(34, 197, 94, 0.25); }
-    .badge-tcp  { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue-light); border-color: rgba(59, 130, 246, 0.25); }
+    .badge-gui  { background: rgba(139,92,246,0.15); color: var(--accent-purple-light); border-color: rgba(139,92,246,0.3); }
+    .badge-http { background: rgba(34,197,94,0.1); color: var(--accent-green-light); border-color: rgba(34,197,94,0.25); }
+    .badge-tcp  { background: rgba(59,130,246,0.1); color: var(--accent-blue-light); border-color: rgba(59,130,246,0.25); }
 
     .port-badge {
       font-size: 0.75rem; font-family: monospace; color: var(--text-dim);
@@ -283,11 +317,105 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
       animation: spin 0.7s linear infinite; flex-shrink: 0;
     }
 
+    /* ── Device Picker ── */
+    .device-picker {
+      padding: 0.75rem 1.25rem;
+      background: rgba(59,130,246,0.05);
+      border-bottom: 1px solid rgba(59,130,246,0.15);
+    }
+
+    .device-picker-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .device-picker-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent-blue-light);
+    }
+
+    .device-loading {
+      font-size: 0.7rem;
+      color: var(--text-dimmer);
+      font-style: italic;
+    }
+
+    .device-list {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .device-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      padding: 5px 8px;
+      cursor: pointer;
+      text-align: left;
+      transition: background var(--transition-fast), border-color var(--transition-fast);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+
+      &:hover:not(:disabled) {
+        background: rgba(59,130,246,0.1);
+        border-color: rgba(59,130,246,0.3);
+        color: white;
+      }
+
+      &:disabled { opacity: 0.5; cursor: not-allowed; }
+    }
+
+    .device-btn.device-active {
+      background: rgba(59,130,246,0.15);
+      border-color: rgba(59,130,246,0.4);
+      color: var(--accent-blue-light);
+    }
+
+    .device-check {
+      width: 14px;
+      font-size: 0.75rem;
+      color: var(--accent-blue-light);
+      flex-shrink: 0;
+    }
+
+    .device-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .device-meta {
+      font-size: 0.7rem;
+      color: var(--text-dimmer);
+      flex-shrink: 0;
+    }
+
+    .device-empty {
+      font-size: 0.75rem;
+      color: var(--text-dimmer);
+      font-style: italic;
+      padding: 4px 0;
+    }
+
+    /* ── GUI notice ── */
     .gui-notice {
       display: flex; align-items: flex-start; gap: 8px;
       padding: 0.5rem 1.25rem;
-      background: rgba(139, 92, 246, 0.07);
-      border-bottom: 1px solid rgba(139, 92, 246, 0.15);
+      background: rgba(139,92,246,0.07);
+      border-bottom: 1px solid rgba(139,92,246,0.15);
       font-size: 0.75rem; color: var(--accent-purple-light); line-height: 1.5;
     }
 
@@ -295,7 +423,6 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
       display: flex; align-items: center; gap: 8px;
       padding: 0.75rem 1.25rem; background: #161616;
     }
-
     .log-toggle { margin-left: auto; }
 
     .pending-label {
@@ -320,7 +447,6 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
     }
 
     .log-panel { display: flex; flex-direction: column; border-top: 1px solid var(--border-dim); }
-
     .log-toolbar {
       display: flex; justify-content: space-between; align-items: center;
       padding: 0.5rem 1rem; background: var(--surface-1);
@@ -331,7 +457,6 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
       cursor: pointer; font-size: 0.75rem; transition: color var(--transition-fast);
       &:hover { color: var(--text-muted); }
     }
-
     .log-body {
       padding: 0.75rem 1rem;
       font-family: 'Courier New', monospace;
@@ -348,6 +473,12 @@ export class ServicesPageComponent extends PollingComponent {
   launcherOnline = signal(false);
   loading        = signal(false);
   lastUpdated    = signal('—');
+
+  // TTS device state
+  audioDevices   = signal<AudioDevice[]>([]);
+  activeDeviceId = signal<number | null>(null);
+  deviceLoading  = signal(false);
+  deviceSetting  = signal(false);
 
   statusMeta(status: string) { return STATUS_META[status] ?? STATUS_META['unknown']; }
   isGui(id: string): boolean { return GUI_SERVICES.has(id); }
@@ -372,14 +503,55 @@ export class ServicesPageComponent extends PollingComponent {
       }));
 
       this.lastUpdated.set(new Date().toLocaleTimeString());
+
       for (const svc of this.services()) {
         if (svc.logsOpen) this.refreshLogs(svc);
+      }
+
+      // Refresh device list whenever TTS service is online
+      const tts = this.services().find(s => s.id === 'tts_service');
+      if (tts?.status === 'online') {
+        await this.loadDevices();
+      } else {
+        this.audioDevices.set([]);
+        this.activeDeviceId.set(null);
       }
     } catch {
       this.launcherOnline.set(false);
     } finally {
       this.loading.set(false);
     }
+  }
+
+  async loadDevices() {
+    this.deviceLoading.set(true);
+    try {
+      const res = await fetch('/tts/devices');
+      if (!res.ok) return;
+      const data = await res.json();
+      this.audioDevices.set(data.devices ?? []);
+      this.activeDeviceId.set(data.active_device_id ?? null);
+    } catch { /* TTS service may not be ready */ }
+    finally { this.deviceLoading.set(false); }
+  }
+
+  async selectDevice(deviceId: number) {
+    if (this.deviceSetting()) return;
+    this.deviceSetting.set(true);
+    try {
+      const res = await fetch('/tts/device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_id: deviceId }),
+      });
+      if (res.ok) {
+        this.activeDeviceId.set(deviceId);
+        this.audioDevices.update(devs =>
+          devs.map(d => ({ ...d, is_active: d.id === deviceId }))
+        );
+      }
+    } catch { /* silent */ }
+    finally { this.deviceSetting.set(false); }
   }
 
   async serviceAction(svc: ServiceDetail, action: 'start' | 'stop' | 'restart') {

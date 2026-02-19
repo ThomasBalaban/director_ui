@@ -32,6 +32,11 @@
     "target": "http://localhost:8001",
     "secure": false
   },
+  "/tts": {
+    "target": "http://localhost:8004",
+    "secure": false,
+    "pathRewrite": { "^/tts": "" }
+  },
   "/launcher": {
     "target": "http://localhost:8010",
     "secure": false
