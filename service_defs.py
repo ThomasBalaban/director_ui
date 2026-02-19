@@ -64,9 +64,9 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "description":  "Gemini screen watcher — vision + audio transcription",
         "cmd":          [conda_python("gemini-screen-watcher"), os.path.join(PARENT_DIR, "desktop_mon_gemini", "main.py")],
         "cwd":          os.path.join(PARENT_DIR, "desktop_mon_gemini"),
-        "port":         8003, 
+        "port":         8003,  # Websocket primary port
         "health_check": "http",
-        "health_url":   "http://localhost:8005/health",
+        "health_url":   "http://localhost:8007/health",  # CHANGED: Hits the new 8007 control port
         "managed":      True,
     },
     "director": {
@@ -74,9 +74,9 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "description":  "Brain — drives directives, scoring, and state",
         "cmd":          [conda_python("director-engine"), os.path.join(PARENT_DIR, "director_engine", "main.py")],
         "cwd":          os.path.join(PARENT_DIR, "director_engine"),
-        "port":         8006,          # Changed from 8002
+        "port":         8006,
         "health_check": "http",
-        "health_url":   "http://localhost:8006/health",  # Changed
+        "health_url":   "http://localhost:8006/health", 
         "managed":      True,
     },
     "tts_service": {
