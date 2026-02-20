@@ -117,6 +117,16 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "health_check": "tcp",
         "managed":      True,
     },
+    "user_profile_service": {
+        "label":        "User Profile Service",
+        "description":  "Standalone database for user profiles and relationships",
+        "cmd":          [sys.executable, os.path.join(PARENT_DIR, "user_profile_service", "main.py")],
+        "cwd":          os.path.join(PARENT_DIR, "user_profile_service"),
+        "port":         8008, 
+        "health_check": "http",
+        "health_url":   "http://localhost:8008/health",
+        "managed":      True,
+    },
 }
 
 # Boot-time health check retry counts per service
@@ -127,4 +137,5 @@ BOOT_RETRIES: Dict[str, int] = {
     "desktop_monitor": 40,
     "director":        60,
     "twitch_service":  30,
+    "user_profile_service": 30,
 }
