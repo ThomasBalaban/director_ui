@@ -302,7 +302,7 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
       border-radius: var(--radius-lg); overflow: hidden;
       display: flex; flex-direction: column; transition: border-color var(--transition-normal);
     }
-    .card-online    { border-color: rgba(34,197,94,0.4); }
+    .card-online    { border-width: 2px; border-color: rgb(34, 197, 94); }
     .card-starting  { border-color: rgba(59,130,246,0.4); }
     .card-stopping  { border-color: rgba(245,158,11,0.4); }
     .card-unhealthy { border-color: rgba(239,68,68,0.4); }

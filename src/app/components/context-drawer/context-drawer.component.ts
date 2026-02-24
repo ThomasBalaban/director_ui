@@ -32,7 +32,7 @@ import { BotReply } from '../../models/director.models';
             <div class="warning-title">⚠️ Safety Filter Triggered</div>
             <div class="warning-row">
               <span class="warn-label">Filtered Word:</span>
-              <span class="filtered-word">{{ data.censorship_reason }}</span>
+              <span class="filtered-word">{{ data.censorship_reason || 'Unknown Policy' }}</span>
             </div>
             <div class="warning-row" *ngIf="data.filtered_area">
               <span class="warn-label">Filtered Area:</span>

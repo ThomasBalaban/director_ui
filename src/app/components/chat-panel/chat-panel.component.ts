@@ -33,7 +33,7 @@ import { BotReply } from '../../models/director.models';
           >
             <strong>Nami:</strong> {{ reply.reply }}
             <span *ngIf="reply.is_censored" class="censored-indicator">
-              🚨 FILTERED ({{ reply.censorship_reason }})
+              🚨 FILTERED ({{ reply.censorship_reason || 'Unknown Policy' }})
             </span>
             <span class="context-hint">📄 Context</span>
           </div>
