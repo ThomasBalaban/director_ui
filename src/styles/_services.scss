@@ -1,0 +1,294 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared Service Card Styles
+// Used by: service-page.component & service-card.component
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Card shell ──────────────────────────────────────────────────────────────
+
+.card {
+  background: var(--surface-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color var(--transition-normal);
+}
+
+.card-online    { border-width: 2px; border-color: rgb(34, 197, 94); }
+.card-starting  { border-color: rgba(59, 130, 246, 0.4); }
+.card-stopping  { border-color: rgba(245, 158, 11, 0.4); }
+.card-unhealthy { border-color: rgba(239, 68, 68, 0.4); }
+
+// ── Card header ──────────────────────────────────────────────────────────────
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-header-left  { display: flex; align-items: flex-start; gap: 12px; }
+.card-header-right { display: flex; align-items: center; gap: 8px; }
+
+.status-icon { font-size: 1.5rem; line-height: 1; width: 24px; text-align: center; }
+
+.card-title-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.card-title     { font-weight: 700; font-size: 1rem; color: white; }
+.card-desc      { font-size: 0.75rem; color: var(--text-dim); margin-top: 3px; }
+
+// ── Badges ───────────────────────────────────────────────────────────────────
+
+.type-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-gui  { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple-light); border-color: rgba(139, 92, 246, 0.3); }
+.badge-http { background: rgba(34, 197, 94, 0.1);   color: var(--accent-green-light);  border-color: rgba(34, 197, 94, 0.25); }
+.badge-tcp  { background: rgba(59, 130, 246, 0.1);  color: var(--accent-blue-light);   border-color: rgba(59, 130, 246, 0.25); }
+
+.port-badge {
+  font-size: 0.75rem;
+  font-family: monospace;
+  color: var(--text-dim);
+  background: var(--surface-1);
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--border-faint);
+}
+
+.pid-badge { font-size: 0.7rem; font-family: monospace; color: var(--text-dimmer); }
+
+// ── Status pill ───────────────────────────────────────────────────────────────
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.pill-spinner {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  border-top-color: currentColor;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+// ── GUI notice ────────────────────────────────────────────────────────────────
+
+.gui-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 0.5rem 1.25rem;
+  background: rgba(139, 92, 246, 0.07);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.15);
+  font-size: 0.75rem;
+  color: var(--accent-purple-light);
+  line-height: 1.5;
+}
+
+// ── Card controls ─────────────────────────────────────────────────────────────
+
+.card-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.75rem 1.25rem;
+  background: #161616;
+}
+
+.log-toggle { margin-left: auto; }
+
+.pending-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+.inline-spinner {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--border-faint);
+  border-top-color: var(--text-dim);
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+// ── Unmanaged footer ──────────────────────────────────────────────────────────
+
+.card-unmanaged {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.625rem 1.25rem;
+  background: #161616;
+  font-size: 0.75rem;
+  color: var(--text-dimmer);
+}
+
+.unmanaged-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--surface-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+
+// ── VS Code button ────────────────────────────────────────────────────────────
+
+.btn-vscode {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 122, 204, 0.12);
+  border-color: rgba(0, 122, 204, 0.35);
+  color: #4fc3f7;
+
+  &:hover:not(:disabled) {
+    background: rgba(0, 122, 204, 0.22);
+    border-color: rgba(0, 122, 204, 0.6);
+    color: #81d4fa;
+  }
+
+  &:disabled { opacity: 0.35; cursor: not-allowed; }
+}
+
+.btn-vscode--sm { padding: 3px 10px; font-size: 0.72rem; margin-left: auto; }
+
+.vscode-logo { width: 13px; height: 13px; fill: currentColor; flex-shrink: 0; }
+
+// ── Device picker ─────────────────────────────────────────────────────────────
+
+.device-picker {
+  padding: 0.75rem 1.25rem;
+  background: rgba(59, 130, 246, 0.05);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+}
+
+.device-picker-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.device-picker-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-blue-light);
+}
+
+.device-loading { font-size: 0.7rem; color: var(--text-dimmer); font-style: italic; }
+
+.device-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.device-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+
+  &:hover:not(:disabled) {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: white;
+  }
+
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.device-btn.device-active {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: var(--accent-blue-light);
+}
+
+.device-check { width: 14px; font-size: 0.75rem; color: var(--accent-blue-light); flex-shrink: 0; }
+.device-name  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.device-meta  { font-size: 0.7rem; color: var(--text-dimmer); flex-shrink: 0; }
+.device-empty { font-size: 0.75rem; color: var(--text-dimmer); font-style: italic; padding: 4px 0; }
+
+// ── Log panel ─────────────────────────────────────────────────────────────────
+
+.log-panel { display: flex; flex-direction: column; border-top: 1px solid var(--border-dim); }
+
+.log-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: var(--surface-1);
+}
+
+.log-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dimmer);
+  font-weight: 700;
+}
+
+.log-refresh {
+  background: transparent;
+  border: none;
+  color: var(--text-dimmer);
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: color var(--transition-fast);
+
+  &:hover { color: var(--text-muted); }
+}
+
+.log-body {
+  padding: 0.75rem 1rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.72rem;
+  line-height: 1.6;
+  background: var(--surface-0);
+  max-height: 300px;
+  overflow-y: auto;
+  color: var(--text-muted);
+}
+
+.log-empty { color: #374151; font-style: italic; }

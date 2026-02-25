@@ -20,13 +20,34 @@ import { BotReply } from '../../models/director.models';
       </div>
 
       <div class="drawer-content" *ngIf="data">
+
         <div class="section">
-          <h4 class="section-label">Prompt</h4>
+          <div class="section-label-row">
+            <h4 class="section-label">Prompt</h4>
+            <button
+              class="copy-btn"
+              [class.copied]="copiedPrompt"
+              (click)="copy('prompt')"
+              title="Copy prompt"
+            >
+              {{ copiedPrompt ? '✓ Copied' : '⎘ Copy' }}
+            </button>
+          </div>
           <pre class="code-block">{{ data.prompt || '(No prompt data available)' }}</pre>
         </div>
 
         <div class="section">
-          <h4 class="section-label">Response</h4>
+          <div class="section-label-row">
+            <h4 class="section-label">Response</h4>
+            <button
+              class="copy-btn"
+              [class.copied]="copiedReply"
+              (click)="copy('reply')"
+              title="Copy response"
+            >
+              {{ copiedReply ? '✓ Copied' : '⎘ Copy' }}
+            </button>
+          </div>
 
           <div *ngIf="data.is_censored" class="censorship-warning">
             <div class="warning-title">⚠️ Safety Filter Triggered</div>
@@ -43,6 +64,7 @@ import { BotReply } from '../../models/director.models';
 
           <pre class="code-block" [class.code-block--censored]="data.is_censored">{{ data.reply || '(No reply data available)' }}</pre>
         </div>
+
       </div>
     </aside>
   `,
@@ -105,11 +127,47 @@ import { BotReply } from '../../models/director.models';
 
     .section { margin-bottom: 1.5rem; }
 
+    .section-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+
     .section-label {
       font-size: 0.75rem;
       text-transform: uppercase;
       color: var(--text-muted);
-      margin: 0 0 0.5rem;
+      margin: 0;
+    }
+
+    /* ── Copy button ─────────────────────────────────────── */
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 9px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-faint);
+      background: var(--surface-3);
+      color: var(--text-dim);
+      font-size: 0.7rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+      white-space: nowrap;
+
+      &:hover {
+        background: var(--surface-5);
+        color: var(--text-muted);
+        border-color: #555;
+      }
+
+      &.copied {
+        background: rgba(34, 197, 94, 0.12);
+        color: var(--accent-green-light);
+        border-color: rgba(34, 197, 94, 0.35);
+      }
     }
 
     .code-block { max-height: 300px; }
@@ -165,8 +223,39 @@ export class ContextDrawerComponent {
   @Input() data: BotReply | null = null;
   @Output() close = new EventEmitter<void>();
 
+  copiedPrompt = false;
+  copiedReply  = false;
+
   @HostListener('document:keydown.escape')
   onEscape() {
     if (this.isOpen) this.close.emit();
+  }
+
+  async copy(field: 'prompt' | 'reply'): Promise<void> {
+    if (!this.data) return;
+    const text = field === 'prompt' ? this.data.prompt : this.data.reply;
+    if (!text) return;
+
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Fallback for environments without clipboard API
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+
+    if (field === 'prompt') {
+      this.copiedPrompt = true;
+      setTimeout(() => (this.copiedPrompt = false), 2000);
+    } else {
+      this.copiedReply = true;
+      setTimeout(() => (this.copiedReply = false), 2000);
+    }
   }
 }

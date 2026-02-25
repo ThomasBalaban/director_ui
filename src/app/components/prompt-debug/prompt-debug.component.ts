@@ -42,7 +42,17 @@ interface PromptSection {
         <div class="messages">
           @for (msg of messages(); track $index) {
             <div class="message" [class]="'role-' + msg.role">
-              <div class="role-label">{{ msg.role }}</div>
+              <div class="message-header">
+                <div class="role-label">{{ msg.role }}</div>
+                <button
+                  class="copy-btn"
+                  [class.copied]="copiedIndex() === $index"
+                  (click)="copyMessage($index, msg.content)"
+                  title="Copy message content"
+                >
+                  {{ copiedIndex() === $index ? '✓ Copied' : '⎘ Copy' }}
+                </button>
+              </div>
               <pre class="message-content">{{ msg.content }}</pre>
             </div>
           }
@@ -102,7 +112,7 @@ interface PromptSection {
       transition: width 0.3s ease;
     }
 
-    .size-bar-fill.warn { background: #f59e0b; }
+    .size-bar-fill.warn   { background: #f59e0b; }
     .size-bar-fill.danger { background: #ef4444; }
 
     .size-percent {
@@ -112,15 +122,8 @@ interface PromptSection {
       text-align: right;
     }
 
-    .loading {
-      color: #888;
-      font-size: 0.85rem;
-    }
-
-    .error {
-      color: #f87171;
-      font-size: 0.85rem;
-    }
+    .loading { color: #888; font-size: 0.85rem; }
+    .error   { color: #f87171; font-size: 0.85rem; }
 
     .messages {
       display: flex;
@@ -134,6 +137,14 @@ interface PromptSection {
       border: 1px solid #333;
     }
 
+    /* ── Message header with role + copy button ── */
+    .message-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-right: 8px;
+    }
+
     .role-label {
       padding: 4px 10px;
       font-size: 0.7rem;
@@ -142,9 +153,36 @@ interface PromptSection {
       letter-spacing: 0.08em;
     }
 
-    .role-system .role-label { background: #1e3a5f; color: #93c5fd; }
-    .role-user .role-label { background: #1a3a2a; color: #6ee7b7; }
+    .role-system    .role-label { background: #1e3a5f; color: #93c5fd; }
+    .role-user      .role-label { background: #1a3a2a; color: #6ee7b7; }
     .role-assistant .role-label { background: #3a1a4a; color: #d8b4fe; }
+
+    /* ── Copy button ── */
+    .copy-btn {
+      padding: 2px 9px;
+      border-radius: 4px;
+      border: 1px solid #3a3a3a;
+      background: #1e1e1e;
+      color: #6b7280;
+      font-size: 0.68rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+
+      &:hover {
+        background: #2a2a2a;
+        color: #9ca3af;
+        border-color: #555;
+      }
+
+      &.copied {
+        background: rgba(34, 197, 94, 0.12);
+        color: #4ade80;
+        border-color: rgba(34, 197, 94, 0.35);
+      }
+    }
 
     .message-content {
       background: #111;
@@ -170,19 +208,20 @@ interface PromptSection {
       font-size: 0.8rem;
       cursor: pointer;
       transition: background 0.15s;
-    }
 
-    .refresh-btn:hover:not(:disabled) { background: #3a3a3a; }
-    .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+      &:hover:not(:disabled) { background: #3a3a3a; }
+      &:disabled { opacity: 0.5; cursor: not-allowed; }
+    }
   `]
 })
 export class PromptDebugComponent extends PollingComponent {
   protected override pollingInterval = 5000;
 
-  loading = signal(false);
-  error = signal<string | null>(null);
-  messages = signal<PromptSection[]>([]);
-  promptSize = signal<{ current_tokens: number; max_tokens: number } | null>(null);
+  loading     = signal(false);
+  error       = signal<string | null>(null);
+  messages    = signal<PromptSection[]>([]);
+  promptSize  = signal<{ current_tokens: number; max_tokens: number } | null>(null);
+  copiedIndex = signal<number | null>(null);
 
   sizePercent(): number {
     const s = this.promptSize();
@@ -212,5 +251,23 @@ export class PromptDebugComponent extends PollingComponent {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  async copyMessage(index: number, content: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(content);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = content;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+
+    this.copiedIndex.set(index);
+    setTimeout(() => this.copiedIndex.set(null), 2000);
   }
 }

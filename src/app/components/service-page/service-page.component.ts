@@ -112,16 +112,13 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
               </div>
             </div>
 
-            <!-- TTS Device Picker — shown when tts_service is online -->
+            <!-- TTS Device Picker -->
             @if (svc.id === 'tts_service' && svc.status === 'online') {
               <div class="device-picker">
                 <div class="device-picker-header">
                   <span class="device-picker-label">🔊 Output Device</span>
-                  @if (deviceLoading()) {
-                    <span class="device-loading">Loading…</span>
-                  }
+                  @if (deviceLoading()) { <span class="device-loading">Loading…</span> }
                 </div>
-
                 @if (audioDevices().length) {
                   <div class="device-list">
                     @for (dev of audioDevices(); track dev.id) {
@@ -176,7 +173,6 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
                   }
                 }
 
-                <!-- VS Code button -->
                 <button
                   class="btn btn-vscode"
                   [disabled]="!svc.cwd"
@@ -200,11 +196,7 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
                 <span class="unmanaged-icon">ℹ</span>
                 Monitored only — start this service manually from its own project.
                 @if (svc.cwd) {
-                  <button
-                    class="btn btn-vscode btn-vscode--sm"
-                    (click)="openInVscode(svc)"
-                    title="Open project folder in VS Code ({{ svc.cwd }})"
-                  >
+                  <button class="btn btn-vscode btn-vscode--sm" (click)="openInVscode(svc)" title="Open project folder in VS Code ({{ svc.cwd }})">
                     <svg class="vscode-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                       <path d="M74.5 7.27L51.5 27.79 32.17 11.5 25 15.08v69.84l7.17 3.58L51.5 72.21 74.5 92.73 90 85.5V14.5L74.5 7.27zM74.5 74.08L54.07 50 74.5 25.92V74.08z"/>
                     </svg>
@@ -266,27 +258,47 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
     .page-header-left,
     .page-header-right { display: flex; align-items: center; gap: 1rem; }
 
-    .back-btn { color: var(--text-dim); text-decoration: none; font-size: 0.875rem; transition: color var(--transition-fast); &:hover { color: white; } }
+    .back-btn {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: color var(--transition-fast);
+      &:hover { color: white; }
+    }
+
     .page-title { font-size: 1.5rem; font-weight: 700; color: white; margin: 0; }
 
     .launcher-badge {
-      font-size: 0.75rem; padding: 3px 10px; border-radius: var(--radius-full);
-      background: rgba(75, 85, 99, 0.3); color: var(--text-dim); border: 1px solid var(--border-faint);
-      &.online { background: rgba(34, 197, 94, 0.1); color: var(--accent-green-light); border-color: rgba(34, 197, 94, 0.3); }
+      font-size: 0.75rem;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      background: rgba(75, 85, 99, 0.3);
+      color: var(--text-dim);
+      border: 1px solid var(--border-faint);
+      &.online {
+        background: rgba(34, 197, 94, 0.1);
+        color: var(--accent-green-light);
+        border-color: rgba(34, 197, 94, 0.3);
+      }
     }
 
     .last-update { font-size: 0.75rem; color: var(--text-dimmer); }
-    .spinning { display: inline-block; animation: spin 0.6s linear infinite; }
+    .spinning    { display: inline-block; animation: spin 0.6s linear infinite; }
 
     .banner {
-      display: flex; align-items: flex-start; gap: 0.75rem;
-      margin: 1.25rem 1.5rem 0; padding: 0.875rem 1rem;
-      border-radius: var(--radius-md); font-size: 0.875rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin: 1.25rem 1.5rem 0;
+      padding: 0.875rem 1rem;
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
       code { background: rgba(0,0,0,0.3); padding: 1px 6px; border-radius: 4px; font-family: monospace; }
     }
+
     .banner-warn {
-      background: rgba(245,158,11,0.1);
-      border: 1px solid rgba(245,158,11,0.3);
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
       color: var(--accent-yellow-light);
     }
 
@@ -296,235 +308,6 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
       gap: 1.25rem;
       padding: 1.25rem 1.5rem 2rem;
     }
-
-    .card {
-      background: var(--surface-4); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); overflow: hidden;
-      display: flex; flex-direction: column; transition: border-color var(--transition-normal);
-    }
-    .card-online    { border-width: 2px; border-color: rgb(34, 197, 94); }
-    .card-starting  { border-color: rgba(59,130,246,0.4); }
-    .card-stopping  { border-color: rgba(245,158,11,0.4); }
-    .card-unhealthy { border-color: rgba(239,68,68,0.4); }
-
-    .card-header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
-    }
-    .card-header-left  { display: flex; align-items: flex-start; gap: 12px; }
-    .card-header-right { display: flex; align-items: center; gap: 8px; }
-
-    .status-icon { font-size: 1.5rem; line-height: 1; width: 24px; text-align: center; }
-    .card-title-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .card-title     { font-weight: 700; font-size: 1rem; color: white; }
-    .card-desc      { font-size: 0.75rem; color: var(--text-dim); margin-top: 3px; }
-
-    .type-badge {
-      font-size: 0.65rem; font-weight: 700; padding: 2px 6px;
-      border-radius: 4px; border: 1px solid; text-transform: uppercase; letter-spacing: 0.05em;
-    }
-    .badge-gui  { background: rgba(139,92,246,0.15); color: var(--accent-purple-light); border-color: rgba(139,92,246,0.3); }
-    .badge-http { background: rgba(34,197,94,0.1); color: var(--accent-green-light); border-color: rgba(34,197,94,0.25); }
-    .badge-tcp  { background: rgba(59,130,246,0.1); color: var(--accent-blue-light); border-color: rgba(59,130,246,0.25); }
-
-    .port-badge {
-      font-size: 0.75rem; font-family: monospace; color: var(--text-dim);
-      background: var(--surface-1); padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border-faint);
-    }
-    .pid-badge { font-size: 0.7rem; font-family: monospace; color: var(--text-dimmer); }
-
-    .status-pill {
-      display: flex; align-items: center; gap: 5px;
-      padding: 3px 10px; border-radius: var(--radius-full); border: 1px solid;
-      font-size: 0.75rem; font-weight: 600;
-    }
-    .pill-spinner {
-      width: 8px; height: 8px; border-radius: 50%;
-      border: 1.5px solid transparent; border-top-color: currentColor;
-      animation: spin 0.7s linear infinite; flex-shrink: 0;
-    }
-
-    /* ── Device Picker ── */
-    .device-picker {
-      padding: 0.75rem 1.25rem;
-      background: rgba(59,130,246,0.05);
-      border-bottom: 1px solid rgba(59,130,246,0.15);
-    }
-
-    .device-picker-header {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .device-picker-label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--accent-blue-light);
-    }
-
-    .device-loading {
-      font-size: 0.7rem;
-      color: var(--text-dimmer);
-      font-style: italic;
-    }
-
-    .device-list {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-
-    .device-btn {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      width: 100%;
-      background: transparent;
-      border: 1px solid transparent;
-      border-radius: var(--radius-sm);
-      padding: 5px 8px;
-      cursor: pointer;
-      text-align: left;
-      transition: background var(--transition-fast), border-color var(--transition-fast);
-      color: var(--text-muted);
-      font-size: 0.8rem;
-
-      &:hover:not(:disabled) {
-        background: rgba(59,130,246,0.1);
-        border-color: rgba(59,130,246,0.3);
-        color: white;
-      }
-
-      &:disabled { opacity: 0.5; cursor: not-allowed; }
-    }
-
-    .device-btn.device-active {
-      background: rgba(59,130,246,0.15);
-      border-color: rgba(59,130,246,0.4);
-      color: var(--accent-blue-light);
-    }
-
-    .device-check {
-      width: 14px;
-      font-size: 0.75rem;
-      color: var(--accent-blue-light);
-      flex-shrink: 0;
-    }
-
-    .device-name {
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .device-meta {
-      font-size: 0.7rem;
-      color: var(--text-dimmer);
-      flex-shrink: 0;
-    }
-
-    .device-empty {
-      font-size: 0.75rem;
-      color: var(--text-dimmer);
-      font-style: italic;
-      padding: 4px 0;
-    }
-
-    /* ── GUI notice ── */
-    .gui-notice {
-      display: flex; align-items: flex-start; gap: 8px;
-      padding: 0.5rem 1.25rem;
-      background: rgba(139,92,246,0.07);
-      border-bottom: 1px solid rgba(139,92,246,0.15);
-      font-size: 0.75rem; color: var(--accent-purple-light); line-height: 1.5;
-    }
-
-    .card-controls {
-      display: flex; align-items: center; gap: 8px;
-      padding: 0.75rem 1.25rem; background: #161616;
-    }
-    .log-toggle { margin-left: auto; }
-
-    .pending-label {
-      display: flex; align-items: center; gap: 8px;
-      color: var(--text-dim); font-size: 0.8rem;
-    }
-    .inline-spinner {
-      width: 12px; height: 12px; border-radius: 50%;
-      border: 2px solid var(--border-faint); border-top-color: var(--text-dim);
-      animation: spin 0.7s linear infinite; flex-shrink: 0;
-    }
-
-    .card-unmanaged {
-      display: flex; align-items: center; gap: 8px;
-      padding: 0.625rem 1.25rem; background: #161616;
-      font-size: 0.75rem; color: var(--text-dimmer);
-    }
-    .unmanaged-icon {
-      width: 16px; height: 16px; border-radius: 50%;
-      background: var(--surface-4); display: flex; align-items: center;
-      justify-content: center; font-size: 0.65rem; color: var(--text-dim);
-    }
-
-    /* ── VS Code button ── */
-    .btn-vscode {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      background: rgba(0, 122, 204, 0.12);
-      border-color: rgba(0, 122, 204, 0.35);
-      color: #4fc3f7;
-
-      &:hover:not(:disabled) {
-        background: rgba(0, 122, 204, 0.22);
-        border-color: rgba(0, 122, 204, 0.6);
-        color: #81d4fa;
-      }
-
-      &:disabled {
-        opacity: 0.35;
-        cursor: not-allowed;
-      }
-    }
-
-    .btn-vscode--sm {
-      padding: 3px 10px;
-      font-size: 0.72rem;
-      margin-left: auto;
-    }
-
-    .vscode-logo {
-      width: 13px;
-      height: 13px;
-      fill: currentColor;
-      flex-shrink: 0;
-    }
-
-    .log-panel { display: flex; flex-direction: column; border-top: 1px solid var(--border-dim); }
-    .log-toolbar {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 0.5rem 1rem; background: var(--surface-1);
-    }
-    .log-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dimmer); font-weight: 700; }
-    .log-refresh {
-      background: transparent; border: none; color: var(--text-dimmer);
-      cursor: pointer; font-size: 0.75rem; transition: color var(--transition-fast);
-      &:hover { color: var(--text-muted); }
-    }
-    .log-body {
-      padding: 0.75rem 1rem;
-      font-family: 'Courier New', monospace;
-      font-size: 0.72rem; line-height: 1.6;
-      background: var(--surface-0); max-height: 300px; overflow-y: auto; color: var(--text-muted);
-    }
-    .log-empty { color: #374151; font-style: italic; }
   `]
 })
 export class ServicesPageComponent extends PollingComponent {
@@ -535,7 +318,6 @@ export class ServicesPageComponent extends PollingComponent {
   loading        = signal(false);
   lastUpdated    = signal('—');
 
-  // TTS device state
   audioDevices   = signal<AudioDevice[]>([]);
   activeDeviceId = signal<number | null>(null);
   deviceLoading  = signal(false);
@@ -574,7 +356,6 @@ export class ServicesPageComponent extends PollingComponent {
         if (svc.logsOpen) this.refreshLogs(svc);
       }
 
-      // Refresh device list whenever TTS service is online
       const tts = this.services().find(s => s.id === 'tts_service');
       if (tts?.status === 'online') {
         await this.loadDevices();
