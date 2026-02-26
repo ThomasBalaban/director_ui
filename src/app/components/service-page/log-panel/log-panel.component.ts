@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
       <div class="log-toolbar">
         <span class="log-title">Stdout — {{ title }}</span>
         <button class="log-refresh" (click)="refresh.emit()">↻ Refresh</button>
+        <button class="log-clear" (click)="clear.emit()">✕ Clear</button>
       </div>
       <div class="log-body">
         @if (lines.length) {
@@ -53,12 +54,20 @@ import { CommonModule } from '@angular/common';
     }
 
     .log-empty { color: #374151; font-style: italic; }
+
+    .toolbar-actions { display: flex; gap: 8px; align-items: center; }
+    .log-clear {
+      background: transparent; border: none; color: var(--accent-red-light);
+      cursor: pointer; font-size: 0.75rem; opacity: 0.6; transition: opacity var(--transition-fast);
+      &:hover { opacity: 1; }
+    }
   `]
 })
 export class LogPanelComponent {
   @Input() title = '';
   @Input() lines: string[] = [];
   @Output() refresh = new EventEmitter<void>();
+  @Output() clear = new EventEmitter<void>();
 
   isError = (l: string) => /error|failed|exception|traceback|fatal/i.test(l);
   isWarn  = (l: string) => /warn|warning|⚠/i.test(l);

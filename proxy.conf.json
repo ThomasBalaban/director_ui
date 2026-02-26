@@ -45,5 +45,9 @@
   "/launcher": {
     "target": "http://localhost:8010",
     "secure": false
+  },
+  "/memory": {
+    "target": "http://localhost:8009",
+    "secure": false
   }
 }

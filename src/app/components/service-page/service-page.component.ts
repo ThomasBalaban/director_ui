@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { PollingComponent } from '../../shared/polling.component';
 import { ServiceStatus  } from '../../shared/interfaces/director.interfaces';
+import { LogPanelComponent } from './log-panel/log-panel.component';
 
 interface ServiceDetail extends ServiceStatus {
   description: string;
@@ -36,7 +37,7 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
 @Component({
   selector: 'app-services-page',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, LogPanelComponent],
   template: `
     <div class="page">
 
@@ -207,26 +208,12 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
             }
 
             @if (svc.logsOpen) {
-              <div class="log-panel">
-                <div class="log-toolbar">
-                  <span class="log-title">Stdout — {{ svc.label }}</span>
-                  <button class="log-refresh" (click)="refreshLogs(svc)">↻ Refresh</button>
-                </div>
-                <div class="log-body">
-                  @if (svc.logs && svc.logs.length) {
-                    @for (line of svc.logs; track $index) {
-                      <div
-                        class="log-line"
-                        [class.log-line--error]="isErrorLine(line)"
-                        [class.log-line--ok]="isOkLine(line)"
-                        [class.log-line--warn]="isWarnLine(line)"
-                      >{{ line }}</div>
-                    }
-                  } @else {
-                    <div class="log-empty">No output captured yet.</div>
-                  }
-                </div>
-              </div>
+              <app-log-panel
+                [title]="svc.label"
+                [lines]="svc.logs ?? []"
+                (refresh)="refreshLogs(svc)"
+                (clear)="clearLogs(svc)"
+              />
             }
 
           </div>
@@ -426,6 +413,12 @@ export class ServicesPageComponent extends PollingComponent {
       const data = await res.json();
       this.services.update(svcs => svcs.map(s => s.id === svc.id ? { ...s, logs: data.lines } : s));
     } catch { /* silent */ }
+  }
+
+  clearLogs(svc: ServiceDetail): void {
+    this.services.update(svcs =>
+      svcs.map(s => s.id === svc.id ? { ...s, logs: [] } : s)
+    );
   }
 
   private setActionPending(id: string, pending: boolean) {
