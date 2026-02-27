@@ -4,7 +4,7 @@ Nami Launcher — Process Manager
 Lives in director_ui/ and manages services in sibling folders.
 Started automatically by `npm start` — you never need to run this manually.
 
-Port: 8010  (avoids conflict with desktop_mon_gemini WebSocket on 8003)
+Port: 8010 (configurable via .env LAUNCHER_PORT)
 
 Health check strategy:
   - HTTP services (FastAPI):  GET /health endpoint
@@ -17,6 +17,7 @@ import subprocess
 import threading
 import time
 import os
+import sys
 import httpx
 import uvicorn
 from collections import deque
@@ -25,10 +26,15 @@ from typing import Optional, Dict, Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+# Load environment variables from a .env file if present
+load_dotenv()
 
 from service_defs import SERVICE_DEFS, BOOT_RETRIES, UI_DIR, conda_python
 
-LAUNCHER_PORT = 8010
+# Allow overriding the default port via environment variable
+LAUNCHER_PORT = int(os.environ.get("LAUNCHER_PORT", 8010))
 
 # ─────────────────────────────────────────────
 # Runtime state
@@ -50,8 +56,12 @@ async def _http_health(url: str, timeout: float = 2.0) -> bool:
         return False
     try:
         r = await http_client.get(url, timeout=timeout)
-        return r.status_code < 500
-    except Exception:
+        r.raise_for_status() # Ensure we get a 2xx response
+        return True
+    except httpx.HTTPError:
+        return False
+    except Exception as e:
+        print(f"Unexpected error during HTTP health check for {url}: {e}", file=sys.stderr)
         return False
 
 
@@ -64,7 +74,10 @@ async def _tcp_health(host: str, port: int, timeout: float = 1.5) -> bool:
         except Exception:
             pass
         return True
-    except Exception:
+    except (asyncio.TimeoutError, ConnectionRefusedError, OSError):
+        return False
+    except Exception as e:
+        print(f"Unexpected error during TCP health check for {host}:{port}: {e}", file=sys.stderr)
         return False
 
 
@@ -208,26 +221,32 @@ async def stop_service(name: str) -> Dict[str, Any]:
 async def lifespan(app: FastAPI):
     global http_client
     http_client = httpx.AsyncClient()
-    print(f"🚀 Launcher ready on :{LAUNCHER_PORT}")
-    print(f"   Desktop Monitor Python : {conda_python('gemini-screen-watcher')}")
-    print(f"   Director Engine Python : {conda_python('director-engine')}")
-    print(f"   Nami / TTS Python      : {conda_python('nami')}")
-    for name, defn in SERVICE_DEFS.items():
-        if not defn.get("managed"):
-            continue
-        is_module = "-m" in defn["cmd"]
-        if is_module:
-            module = defn["cmd"][defn["cmd"].index("-m") + 1]
-            print(f"   ✅ {defn['label']:20s} → -m {module}  (cwd: {defn.get('cwd', UI_DIR)})")
-        else:
-            entry = defn["cmd"][-1]
-            print(f"   {'✅' if os.path.exists(entry) else '❌'} {defn['label']:20s} → {entry}")
-    yield
-    for name, p in _procs.items():
-        if p and p.poll() is None:
-            print(f"  Stopping {name}...")
-            p.terminate()
-    await http_client.aclose()
+    
+    try:
+        print(f"🚀 Launcher ready on :{LAUNCHER_PORT}")
+        print(f"   Desktop Monitor Python : {conda_python('gemini-screen-watcher')}")
+        print(f"   Director Engine Python : {conda_python('director-engine')}")
+        print(f"   Nami / TTS Python      : {conda_python('nami')}")
+        for name, defn in SERVICE_DEFS.items():
+            if not defn.get("managed"):
+                continue
+            is_module = "-m" in defn["cmd"]
+            if is_module:
+                module = defn["cmd"][defn["cmd"].index("-m") + 1]
+                print(f"   ✅ {defn['label']:20s} → -m {module}  (cwd: {defn.get('cwd', UI_DIR)})")
+            else:
+                entry = defn["cmd"][-1]
+                print(f"   {'✅' if os.path.exists(entry) else '❌'} {defn['label']:20s} → {entry}")
+        
+        yield
+        
+    finally:
+        for name, p in _procs.items():
+            if p and p.poll() is None:
+                print(f"  Stopping {name}...")
+                p.terminate()
+        if http_client:
+            await http_client.aclose()
 
 
 app = FastAPI(title="Nami Launcher", lifespan=lifespan)
@@ -285,7 +304,9 @@ async def restart(name: str):
 async def get_logs(name: str, last: int = 150):
     if name not in SERVICE_DEFS:
         raise HTTPException(404, f"Unknown service: {name}")
+    # Return directly from the GET request without modifying state
     return {"lines": list(_logs[name])[-last:]}
+
 
 @app.delete("/launcher/services/{name}/logs")
 async def clear_logs(name: str):
@@ -293,6 +314,7 @@ async def clear_logs(name: str):
         raise HTTPException(404, f"Unknown service: {name}")
     _logs[name].clear()
     return {"ok": True}
+
 
 @app.get("/launcher/health")
 async def health():
