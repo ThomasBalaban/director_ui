@@ -69,16 +69,16 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "health_url":   "http://localhost:8007/health",  # CHANGED: Hits the new 8007 control port
         "managed":      True,
     },
-    # "memory_service": {
-    #     "label":        "Memory Service",
-    #     "description":  "Semantic memory store — retrieval, compression, and decay",
-    #     "cmd":          [conda_python("memory-service"), "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8009"],
-    #     "cwd":          os.path.join(PARENT_DIR, "memory_service"),
-    #     "port":         8009,
-    #     "health_check": "http",
-    #     "health_url":   "http://localhost:8009/health",
-    #     "managed":      True,
-    # },
+    "memory_service": {
+        "label":        "Memory Service",
+        "description":  "Semantic memory store — retrieval, compression, and decay",
+        "cmd":          [conda_python("memory-service"), "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8009"],
+        "cwd":          os.path.join(PARENT_DIR, "memory_service"),
+        "port":         8009,
+        "health_check": "http",
+        "health_url":   "http://localhost:8009/health",
+        "managed":      True,
+    },
     "director": {
         "label":        "Director Engine",
         "description":  "Brain — drives directives, scoring, and state",
@@ -148,5 +148,5 @@ BOOT_RETRIES: Dict[str, int] = {
     "director":        60,
     "twitch_service":  30,
     "user_profile_service": 30,
-    # "memory_service": 40,
+    "memory_service": 40,
 }
