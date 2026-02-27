@@ -392,6 +392,7 @@ export class ServicesPageComponent extends PollingComponent {
   micDeviceLoading  = signal(false);
   micDeviceSetting  = signal(false);
   micSwapMessage    = signal('');
+  private micSwapAt = 0;
 
   // ── Stream audio (input) ──────────────────────────────────────────────────
   streamDevices        = signal<AudioDevice[]>([]);
@@ -399,6 +400,7 @@ export class ServicesPageComponent extends PollingComponent {
   streamDeviceLoading  = signal(false);
   streamDeviceSetting  = signal(false);
   streamSwapMessage    = signal('');
+  private streamSwapAt = 0;
 
   statusMeta(status: string) { return STATUS_META[status] ?? STATUS_META['unknown']; }
   isGui(id: string): boolean { return GUI_SERVICES.has(id); }
@@ -486,12 +488,17 @@ export class ServicesPageComponent extends PollingComponent {
       if (!res.ok) return;
       const data = await res.json();
 
+      const now = Date.now();
       if (target === 'mic') {
         this.micDevices.set(data.devices ?? []);
-        this.micActiveDeviceId.set(data.current_device_id ?? null);
+        if (now - this.micSwapAt > 6000) {
+          this.micActiveDeviceId.set(data.current_device_id ?? null);
+        }
       } else {
         this.streamDevices.set(data.devices ?? []);
-        this.streamActiveDeviceId.set(data.current_device_id ?? null);
+        if (now - this.streamSwapAt > 6000) {
+          this.streamActiveDeviceId.set(data.current_device_id ?? null);
+        }
       }
     } catch { /* silent */ }
     finally {
@@ -529,6 +536,7 @@ export class ServicesPageComponent extends PollingComponent {
         body: JSON.stringify({ device_id: deviceId }),
       });
       if (res.ok) {
+        this.micSwapAt = Date.now();
         this.micActiveDeviceId.set(deviceId);
         this.micSwapMessage.set('✓ Device applied');
         setTimeout(() => this.micSwapMessage.set(''), 3000);
@@ -547,6 +555,7 @@ export class ServicesPageComponent extends PollingComponent {
         body: JSON.stringify({ device_id: deviceId }),
       });
       if (res.ok) {
+        this.streamSwapAt = Date.now();
         this.streamActiveDeviceId.set(deviceId);
         this.streamSwapMessage.set('✓ Device applied');
         setTimeout(() => this.streamSwapMessage.set(''), 3000);
