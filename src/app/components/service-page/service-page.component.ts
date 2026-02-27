@@ -4,11 +4,12 @@ import { RouterLink } from '@angular/router';
 import { PollingComponent } from '../../shared/polling.component';
 import { ServiceDetail, AudioDevice, STATUS_META, GUI_SERVICES } from '../../shared/interfaces/services.interface';
 import { LogPanelComponent } from './log-panel/log-panel.component';
+import { DevicePickerComponent } from './device-picker/device-picker.component';
 
 @Component({
   selector: 'app-services-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, LogPanelComponent],
+  imports: [CommonModule, RouterLink, LogPanelComponent, DevicePickerComponent],
   templateUrl: './service-page.component.html',
   styleUrl: './service-page.component.scss',
 })

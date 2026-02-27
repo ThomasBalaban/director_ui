@@ -85,91 +85,40 @@
 
         <!-- TTS output device picker -->
         @if (svc.id === 'tts_service' && svc.status === 'online') {
-          <div class="device-picker">
-            <div class="device-picker-header">
-              <span class="device-picker-label">🔊 Output Device</span>
-              @if (ttsDeviceLoading()) { <span class="device-loading">Loading…</span> }
-            </div>
-            @if (ttsDevices().length) {
-              <div class="device-list">
-                @for (dev of ttsDevices(); track dev.id) {
-                  <button
-                    class="device-btn"
-                    [class.device-active]="dev.id === ttsActiveDeviceId()"
-                    (click)="selectTtsDevice(dev.id)"
-                    [disabled]="ttsDeviceSetting()"
-                    [title]="dev.name + ' — ' + dev.channels + 'ch @ ' + dev.default_samplerate + 'Hz'"
-                  >
-                    <span class="device-check">{{ dev.id === ttsActiveDeviceId() ? '✓' : '' }}</span>
-                    <span class="device-name">{{ dev.name }}</span>
-                    <span class="device-meta">{{ dev.default_samplerate / 1000 | number:'1.0-0' }}kHz</span>
-                  </button>
-                }
-              </div>
-            } @else if (!ttsDeviceLoading()) {
-              <div class="device-empty">No output devices found</div>
-            }
-          </div>
+          <app-device-picker
+            label="🔊 Output Device"
+            [devices]="ttsDevices()"
+            [activeDeviceId]="ttsActiveDeviceId()"
+            [loading]="ttsDeviceLoading()"
+            [setting]="ttsDeviceSetting()"
+            (selectDevice)="selectTtsDevice($event)"
+          />
         }
 
         <!-- Microphone input device picker -->
         @if (svc.id === 'microphone_audio_service' && svc.status === 'online') {
-          <div class="device-picker device-picker--input">
-            <div class="device-picker-header">
-              <span class="device-picker-label">🎤 Mic Input Device</span>
-              @if (micDeviceLoading()) { <span class="device-loading">Loading…</span> }
-              @if (micSwapMessage()) { <span class="device-swap-msg">{{ micSwapMessage() }}</span> }
-            </div>
-            @if (micDevices().length) {
-              <div class="device-list">
-                @for (dev of micDevices(); track dev.id) {
-                  <button
-                    class="device-btn"
-                    [class.device-active]="dev.id === micActiveDeviceId()"
-                    (click)="selectMicDevice(dev.id)"
-                    [disabled]="micDeviceSetting()"
-                    [title]="dev.name + ' — ' + dev.channels + 'ch @ ' + dev.default_samplerate + 'Hz'"
-                  >
-                    <span class="device-check">{{ dev.id === micActiveDeviceId() ? '✓' : '' }}</span>
-                    <span class="device-name">[{{ dev.id }}] {{ dev.name }}</span>
-                    <span class="device-meta">{{ dev.default_samplerate / 1000 | number:'1.0-0' }}kHz · {{ dev.channels }}ch</span>
-                  </button>
-                }
-              </div>
-            } @else if (!micDeviceLoading()) {
-              <div class="device-empty">No input devices found</div>
-            }
-          </div>
+            <app-device-picker
+                class="device-picker--input"
+                label="🎤 Mic Input Device"
+                [devices]="micDevices()"
+                [activeDeviceId]="micActiveDeviceId()"
+                [loading]="micDeviceLoading()"
+                [setting]="micDeviceSetting()"
+                (selectDevice)="selectMicDevice($event)"
+            />
         }
 
         <!-- Desktop audio input device picker -->
         @if (svc.id === 'stream_audio_service' && svc.status === 'online') {
-          <div class="device-picker device-picker--input">
-            <div class="device-picker-header">
-              <span class="device-picker-label">🖥️ Desktop Audio Input Device</span>
-              @if (streamDeviceLoading()) { <span class="device-loading">Loading…</span> }
-              @if (streamSwapMessage()) { <span class="device-swap-msg">{{ streamSwapMessage() }}</span> }
-            </div>
-            @if (streamDevices().length) {
-              <div class="device-list">
-                @for (dev of streamDevices(); track dev.id) {
-                  <button
-                    class="device-btn"
-                    [class.device-active]="dev.id === streamActiveDeviceId()"
-                    (click)="selectStreamDevice(dev.id)"
-                    [disabled]="streamDeviceSetting()"
-                    [title]="dev.name + ' — ' + dev.channels + 'ch @ ' + dev.default_samplerate + 'Hz'"
-                  >
-                    <span class="device-check">{{ dev.id === streamActiveDeviceId() ? '✓' : '' }}</span>
-                    <span class="device-name">[{{ dev.id }}] {{ dev.name }}</span>
-                    <span class="device-meta">{{ dev.default_samplerate / 1000 | number:'1.0-0' }}kHz · {{ dev.channels }}ch</span>
-                  </button>
-                }
-              </div>
-            } @else if (!streamDeviceLoading()) {
-              <div class="device-empty">No input devices found</div>
-            }
-          </div>
+            <app-device-picker
+                class="device-picker--input"
+                label="🖥️ Desktop Audio Input Device"
+                [devices]="streamDevices()"
+                [activeDeviceId]="streamActiveDeviceId()"
+                [loading]="streamDeviceLoading()"
+                [setting]="streamDeviceSetting()"
+                (selectDevice)="selectStreamDevice($event)"
+            />
         }
 
         <!-- GUI notice -->
