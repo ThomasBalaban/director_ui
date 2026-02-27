@@ -35,7 +35,7 @@
       ></app-interest-graph>
     </div>
     
-    <!-- Column 2: Context Panels (Vision, Speech, Audio) -->
+    <!-- Column 2: Context Panels (Vision, Microphone Audio, Desktop Audio) -->
     <div class="column">
       <app-context-panel
         title="👁️ Vision (12s)"
@@ -43,12 +43,12 @@
       ></app-context-panel>
       
       <app-context-panel
-        title="🎤 Speech (30s)"
+        title="🎤 Microphone Audio (30s)"
         [logs]="spokenLog"
       ></app-context-panel>
       
       <app-context-panel
-        title="🔊 Audio (12s)"
+        title="🖥️ Desktop Audio (12s)"
         [audioLogs]="audioLog"
         [isAudioPanel]="true"
       ></app-context-panel>
