@@ -1,0 +1,256 @@
+<div class="page">
+
+  <!-- Header bar -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <a routerLink="/" class="back-btn">← Dashboard</a>
+      <h1 class="page-title">Services</h1>
+      <span class="launcher-badge" [class.online]="launcherOnline()">
+        {{ launcherOnline() ? '● Launcher connected' : '○ Launcher offline' }}
+      </span>
+    </div>
+    <div class="page-header-right">
+      <button class="btn btn-start"
+              [disabled]="!launcherOnline() || bulkActionPending()"
+              (click)="startAll()">
+        ▶ Start All
+      </button>
+      <button class="btn btn-stop"
+              [disabled]="!launcherOnline() || bulkActionPending()"
+              (click)="stopAll()">
+        ■ Stop All
+      </button>
+      <span class="last-update">Updated {{ lastUpdated() }}</span>
+      <button class="btn btn-ghost" (click)="poll()" [disabled]="loading()">
+        <span [class.spinning]="loading()">↻</span> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Launcher offline warning -->
+  @if (!launcherOnline()) {
+    <div class="banner banner-warn">
+      <span>⚠️</span>
+      <div>
+        <strong>Launcher not running.</strong>
+        Start it with <code>npm start</code> in the <code>director_ui</code> folder.
+      </div>
+    </div>
+  }
+
+  <!-- Cards -->
+  <div class="cards">
+    @for (svc of services(); track svc.id) {
+      <div class="card" [class]="'card-' + svc.status">
+
+        <!-- Header -->
+        <div class="card-header">
+          <div class="card-header-left">
+            <span class="status-icon" [style.color]="statusMeta(svc.status).color">
+              {{ statusMeta(svc.status).icon }}
+            </span>
+            <div>
+              <div class="card-title-row">
+                <span class="card-title">{{ svc.label }}</span>
+                @if (isGui(svc.id)) {
+                  <span class="type-badge badge-gui" title="Opens a desktop GUI window">🖥 GUI App</span>
+                }
+                <span
+                  class="type-badge"
+                  [class.badge-http]="svc.health_check === 'http'"
+                  [class.badge-tcp]="svc.health_check === 'tcp'"
+                  [title]="svc.health_check === 'http' ? 'Health: HTTP /health endpoint' : 'Health: TCP port probe'"
+                >{{ svc.health_check === 'http' ? 'HTTP' : 'TCP' }}</span>
+              </div>
+              <div class="card-desc">{{ svc.description }}</div>
+            </div>
+          </div>
+
+          <div class="card-header-right">
+            <span class="port-badge">:{{ svc.port }}</span>
+            @if (svc.pid) { <span class="pid-badge">PID {{ svc.pid }}</span> }
+            <span
+              class="status-pill"
+              [style.background]="statusMeta(svc.status).color + '22'"
+              [style.color]="statusMeta(svc.status).color"
+              [style.border-color]="statusMeta(svc.status).color + '55'"
+            >
+              @if (svc.status === 'starting' || svc.status === 'stopping') {
+                <span class="pill-spinner"></span>
+              }
+              {{ statusMeta(svc.status).label }}
+            </span>
+          </div>
+        </div>
+
+        <!-- TTS output device picker -->
+        @if (svc.id === 'tts_service' && svc.status === 'online') {
+          <div class="device-picker">
+            <div class="device-picker-header">
+              <span class="device-picker-label">🔊 Output Device</span>
+              @if (ttsDeviceLoading()) { <span class="device-loading">Loading…</span> }
+            </div>
+            @if (ttsDevices().length) {
+              <div class="device-list">
+                @for (dev of ttsDevices(); track dev.id) {
+                  <button
+                    class="device-btn"
+                    [class.device-active]="dev.id === ttsActiveDeviceId()"
+                    (click)="selectTtsDevice(dev.id)"
+                    [disabled]="ttsDeviceSetting()"
+                    [title]="dev.name + ' — ' + dev.channels + 'ch @ ' + dev.default_samplerate + 'Hz'"
+                  >
+                    <span class="device-check">{{ dev.id === ttsActiveDeviceId() ? '✓' : '' }}</span>
+                    <span class="device-name">{{ dev.name }}</span>
+                    <span class="device-meta">{{ dev.default_samplerate / 1000 | number:'1.0-0' }}kHz</span>
+                  </button>
+                }
+              </div>
+            } @else if (!ttsDeviceLoading()) {
+              <div class="device-empty">No output devices found</div>
+            }
+          </div>
+        }
+
+        <!-- Microphone input device picker -->
+        @if (svc.id === 'microphone_audio_service' && svc.status === 'online') {
+          <div class="device-picker device-picker--input">
+            <div class="device-picker-header">
+              <span class="device-picker-label">🎤 Mic Input Device</span>
+              @if (micDeviceLoading()) { <span class="device-loading">Loading…</span> }
+              @if (micSwapMessage()) { <span class="device-swap-msg">{{ micSwapMessage() }}</span> }
+            </div>
+            @if (micDevices().length) {
+              <div class="device-list">
+                @for (dev of micDevices(); track dev.id) {
+                  <button
+                    class="device-btn"
+                    [class.device-active]="dev.id === micActiveDeviceId()"
+                    (click)="selectMicDevice(dev.id)"
+                    [disabled]="micDeviceSetting()"
+                    [title]="dev.name + ' — ' + dev.channels + 'ch @ ' + dev.default_samplerate + 'Hz'"
+                  >
+                    <span class="device-check">{{ dev.id === micActiveDeviceId() ? '✓' : '' }}</span>
+                    <span class="device-name">[{{ dev.id }}] {{ dev.name }}</span>
+                    <span class="device-meta">{{ dev.default_samplerate / 1000 | number:'1.0-0' }}kHz · {{ dev.channels }}ch</span>
+                  </button>
+                }
+              </div>
+            } @else if (!micDeviceLoading()) {
+              <div class="device-empty">No input devices found</div>
+            }
+          </div>
+        }
+
+        <!-- Desktop audio input device picker -->
+        @if (svc.id === 'stream_audio_service' && svc.status === 'online') {
+          <div class="device-picker device-picker--input">
+            <div class="device-picker-header">
+              <span class="device-picker-label">🖥️ Desktop Audio Input Device</span>
+              @if (streamDeviceLoading()) { <span class="device-loading">Loading…</span> }
+              @if (streamSwapMessage()) { <span class="device-swap-msg">{{ streamSwapMessage() }}</span> }
+            </div>
+            @if (streamDevices().length) {
+              <div class="device-list">
+                @for (dev of streamDevices(); track dev.id) {
+                  <button
+                    class="device-btn"
+                    [class.device-active]="dev.id === streamActiveDeviceId()"
+                    (click)="selectStreamDevice(dev.id)"
+                    [disabled]="streamDeviceSetting()"
+                    [title]="dev.name + ' — ' + dev.channels + 'ch @ ' + dev.default_samplerate + 'Hz'"
+                  >
+                    <span class="device-check">{{ dev.id === streamActiveDeviceId() ? '✓' : '' }}</span>
+                    <span class="device-name">[{{ dev.id }}] {{ dev.name }}</span>
+                    <span class="device-meta">{{ dev.default_samplerate / 1000 | number:'1.0-0' }}kHz · {{ dev.channels }}ch</span>
+                  </button>
+                }
+              </div>
+            } @else if (!streamDeviceLoading()) {
+              <div class="device-empty">No input devices found</div>
+            }
+          </div>
+        }
+
+        <!-- GUI notice -->
+        @if (isGui(svc.id) && svc.managed) {
+          <div class="gui-notice">
+            <span>🖥</span>
+            <span>This service opens a <strong>desktop window</strong> when started. Close the window to stop it, or use the Stop button below.</span>
+          </div>
+        }
+
+        <!-- Controls (managed) -->
+        @if (svc.managed) {
+          <div class="card-controls">
+            @if (svc.status === 'starting' || svc.status === 'stopping') {
+              <div class="pending-label">
+                <span class="inline-spinner"></span>
+                {{ svc.status === 'starting' ? 'Starting…' : 'Stopping…' }}
+              </div>
+            } @else {
+              @if (svc.status === 'offline' || svc.status === 'unhealthy') {
+                <button class="btn btn-start" [disabled]="svc.actionPending || !launcherOnline()" (click)="serviceAction(svc, 'start')">
+                  {{ svc.actionPending ? 'Starting...' : '▶ Start' }}
+                </button>
+              }
+              @if (svc.status === 'online' || svc.status === 'unhealthy') {
+                <button class="btn btn-stop" [disabled]="svc.actionPending || !launcherOnline()" (click)="serviceAction(svc, 'stop')">
+                  {{ svc.actionPending ? 'Stopping...' : '■ Stop' }}
+                </button>
+              }
+              @if (svc.status === 'online') {
+                <button class="btn btn-restart" [disabled]="svc.actionPending || !launcherOnline()" (click)="serviceAction(svc, 'restart')">
+                  {{ svc.actionPending ? 'Restarting...' : '↺ Restart' }}
+                </button>
+              }
+            }
+
+            <button
+              class="btn btn-vscode"
+              [disabled]="!svc.cwd"
+              (click)="openInVscode(svc)"
+              title="Open project folder in VS Code ({{ svc.cwd }})"
+            >
+              <svg class="vscode-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <path d="M74.5 7.27L51.5 27.79 32.17 11.5 25 15.08v69.84l7.17 3.58L51.5 72.21 74.5 92.73 90 85.5V14.5L74.5 7.27zM74.5 74.08L54.07 50 74.5 25.92V74.08z"/>
+              </svg>
+              VS Code
+            </button>
+
+            <button class="btn btn-ghost log-toggle" (click)="toggleLogs(svc)">
+              {{ svc.logsOpen ? '▲ Hide logs' : '▼ Show logs' }}
+            </button>
+          </div>
+        }
+
+        <!-- Unmanaged footer -->
+        @if (!svc.managed) {
+          <div class="card-unmanaged">
+            <span class="unmanaged-icon">ℹ</span>
+            Monitored only — start this service manually from its own project.
+            @if (svc.cwd) {
+              <button class="btn btn-vscode btn-vscode--sm" (click)="openInVscode(svc)" title="Open project folder in VS Code ({{ svc.cwd }})">
+                <svg class="vscode-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M74.5 7.27L51.5 27.79 32.17 11.5 25 15.08v69.84l7.17 3.58L51.5 72.21 74.5 92.73 90 85.5V14.5L74.5 7.27zM74.5 74.08L54.07 50 74.5 25.92V74.08z"/>
+                </svg>
+                VS Code
+              </button>
+            }
+          </div>
+        }
+
+        <!-- Log panel -->
+        @if (svc.logsOpen) {
+          <app-log-panel
+            [title]="svc.label"
+            [lines]="svc.logs ?? []"
+            (refresh)="refreshLogs(svc)"
+            (clear)="clearLogs(svc)"
+          />
+        }
+
+      </div>
+    }
+  </div>
+</div>
