@@ -59,14 +59,39 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "health_url":   "http://localhost:8001/health",
         "managed":      True,
     },
-   "desktop_monitor": {
-        "label":        "Desktop Monitor",
-        "description":  "Gemini screen watcher — vision + audio transcription",
-        "cmd":          [conda_python("gemini-screen-watcher"), os.path.join(PARENT_DIR, "desktop_mon_gemini", "main.py")],
-        "cwd":          os.path.join(PARENT_DIR, "desktop_mon_gemini"),
-        "port":         8003,  # Websocket primary port
+    "microphone_audio_service": {
+        "label":        "Microphone Audio Service",
+        "description":  "Parakeet MLX mic transcription → Hub + WS (port 8013)",
+        "cmd":          [conda_python("gemini-screen-watcher"),
+                         os.path.join(PARENT_DIR, "microphone_audio_service", "main.py")],
+        "cwd":          os.path.join(PARENT_DIR, "microphone_audio_service"),
+        "port":         8013,
         "health_check": "http",
-        "health_url":   "http://localhost:8007/health",  # CHANGED: Hits the new 8007 control port
+        "health_url":   "http://localhost:8014/health",
+        "managed":      True,
+    },
+
+    "vision_service": {
+        "label":        "Vision Service",
+        "description":  "Gemini 2.5 Flash screen analysis → Hub + WS (port 8015)",
+        "cmd":          [conda_python("gemini-screen-watcher"),
+                         os.path.join(PARENT_DIR, "vision_service", "main.py")],
+        "cwd":          os.path.join(PARENT_DIR, "vision_service"),
+        "port":         8015,
+        "health_check": "http",
+        "health_url":   "http://localhost:8016/health",
+        "managed":      True,
+    },
+
+    "stream_audio_service": {
+        "label":        "Stream Audio Service",
+        "description":  "OpenAI Realtime desktop-audio transcription + GPT-4o enrichment → Hub + WS (port 8017)",
+        "cmd":          [conda_python("gemini-screen-watcher"),
+                         os.path.join(PARENT_DIR, "stream_audio_service", "main.py")],
+        "cwd":          os.path.join(PARENT_DIR, "stream_audio_service"),
+        "port":         8017,
+        "health_check": "http",
+        "health_url":   "http://localhost:8018/health",
         "managed":      True,
     },
     "memory_service": {
@@ -144,7 +169,9 @@ BOOT_RETRIES: Dict[str, int] = {
     "hub":             15,
     "nami":            60,
     "tts_service":     20,
-    "desktop_monitor": 40,
+    "microphone_audio_service": 30,
+    "vision_service":           40,
+    "stream_audio_service":     30,
     "director":        60,
     "twitch_service":  30,
     "user_profile_service": 30,
