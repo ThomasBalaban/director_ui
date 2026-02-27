@@ -2,37 +2,8 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { PollingComponent } from '../../shared/polling.component';
-import { ServiceStatus  } from '../../shared/interfaces/director.interfaces';
+import { ServiceDetail, AudioDevice, STATUS_META, GUI_SERVICES } from '../../shared/interfaces/services.interface';
 import { LogPanelComponent } from './log-panel/log-panel.component';
-
-interface ServiceDetail extends ServiceStatus {
-  description: string;
-  pid: number | null;
-  health_check: string;
-  cwd?: string;
-  logs?: string[];
-  logsOpen?: boolean;
-  actionPending?: boolean;
-}
-
-interface AudioDevice {
-  id: number;
-  name: string;
-  channels: number;
-  default_samplerate: number;
-  is_active: boolean;
-}
-
-const STATUS_META: Record<string, { label: string; color: string; icon: string }> = {
-  online:    { label: 'Online',    color: '#22c55e', icon: '●' },
-  offline:   { label: 'Offline',   color: '#4b5563', icon: '○' },
-  starting:  { label: 'Starting',  color: '#3b82f6', icon: '◌' },
-  stopping:  { label: 'Stopping',  color: '#f59e0b', icon: '◌' },
-  unhealthy: { label: 'Unhealthy', color: '#ef4444', icon: '⚠' },
-  unknown:   { label: 'Unknown',   color: '#6b7280', icon: '?' },
-};
-
-const GUI_SERVICES = new Set(['desktop_monitor']);
 
 @Component({
   selector: 'app-services-page',
@@ -51,17 +22,16 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
           </span>
         </div>
         <div class="page-header-right">
-          <button class="btn btn-start" 
-                  [disabled]="!launcherOnline() || bulkActionPending()" 
+          <button class="btn btn-start"
+                  [disabled]="!launcherOnline() || bulkActionPending()"
                   (click)="startAll()">
             ▶ Start All
           </button>
-          <button class="btn btn-stop" 
-                  [disabled]="!launcherOnline() || bulkActionPending()" 
+          <button class="btn btn-stop"
+                  [disabled]="!launcherOnline() || bulkActionPending()"
                   (click)="stopAll()">
             ■ Stop All
           </button>
-
           <span class="last-update">Updated {{ lastUpdated() }}</span>
           <button class="btn btn-ghost" (click)="poll()" [disabled]="loading()">
             <span [class.spinning]="loading()">↻</span> Refresh
@@ -85,6 +55,7 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
         @for (svc of services(); track svc.id) {
           <div class="card" [class]="'card-' + svc.status">
 
+            <!-- Header -->
             <div class="card-header">
               <div class="card-header-left">
                 <span class="status-icon" [style.color]="statusMeta(svc.status).color">
@@ -124,35 +95,96 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
               </div>
             </div>
 
-            <!-- TTS Device Picker -->
+            <!-- TTS output device picker -->
             @if (svc.id === 'tts_service' && svc.status === 'online') {
               <div class="device-picker">
                 <div class="device-picker-header">
                   <span class="device-picker-label">🔊 Output Device</span>
-                  @if (deviceLoading()) { <span class="device-loading">Loading…</span> }
+                  @if (ttsDeviceLoading()) { <span class="device-loading">Loading…</span> }
                 </div>
-                @if (audioDevices().length) {
+                @if (ttsDevices().length) {
                   <div class="device-list">
-                    @for (dev of audioDevices(); track dev.id) {
+                    @for (dev of ttsDevices(); track dev.id) {
                       <button
                         class="device-btn"
-                        [class.device-active]="dev.id === activeDeviceId()"
-                        (click)="selectDevice(dev.id)"
-                        [disabled]="deviceSetting()"
+                        [class.device-active]="dev.id === ttsActiveDeviceId()"
+                        (click)="selectTtsDevice(dev.id)"
+                        [disabled]="ttsDeviceSetting()"
                         [title]="dev.name + ' — ' + dev.channels + 'ch @ ' + dev.default_samplerate + 'Hz'"
                       >
-                        <span class="device-check">{{ dev.id === activeDeviceId() ? '✓' : '' }}</span>
+                        <span class="device-check">{{ dev.id === ttsActiveDeviceId() ? '✓' : '' }}</span>
                         <span class="device-name">{{ dev.name }}</span>
                         <span class="device-meta">{{ dev.default_samplerate / 1000 | number:'1.0-0' }}kHz</span>
                       </button>
                     }
                   </div>
-                } @else if (!deviceLoading()) {
+                } @else if (!ttsDeviceLoading()) {
                   <div class="device-empty">No output devices found</div>
                 }
               </div>
             }
 
+            <!-- Microphone input device picker -->
+            @if (svc.id === 'microphone_audio_service' && svc.status === 'online') {
+              <div class="device-picker device-picker--input">
+                <div class="device-picker-header">
+                  <span class="device-picker-label">🎤 Mic Input Device</span>
+                  @if (micDeviceLoading()) { <span class="device-loading">Loading…</span> }
+                  @if (micSwapMessage()) { <span class="device-swap-msg">{{ micSwapMessage() }}</span> }
+                </div>
+                @if (micDevices().length) {
+                  <div class="device-list">
+                    @for (dev of micDevices(); track dev.id) {
+                      <button
+                        class="device-btn"
+                        [class.device-active]="dev.id === micActiveDeviceId()"
+                        (click)="selectMicDevice(dev.id)"
+                        [disabled]="micDeviceSetting()"
+                        [title]="dev.name + ' — ' + dev.channels + 'ch @ ' + dev.default_samplerate + 'Hz'"
+                      >
+                        <span class="device-check">{{ dev.id === micActiveDeviceId() ? '✓' : '' }}</span>
+                        <span class="device-name">[{{ dev.id }}] {{ dev.name }}</span>
+                        <span class="device-meta">{{ dev.default_samplerate / 1000 | number:'1.0-0' }}kHz · {{ dev.channels }}ch</span>
+                      </button>
+                    }
+                  </div>
+                } @else if (!micDeviceLoading()) {
+                  <div class="device-empty">No input devices found</div>
+                }
+              </div>
+            }
+
+            <!-- Desktop audio input device picker -->
+            @if (svc.id === 'stream_audio_service' && svc.status === 'online') {
+              <div class="device-picker device-picker--input">
+                <div class="device-picker-header">
+                  <span class="device-picker-label">🖥️ Desktop Audio Input Device</span>
+                  @if (streamDeviceLoading()) { <span class="device-loading">Loading…</span> }
+                  @if (streamSwapMessage()) { <span class="device-swap-msg">{{ streamSwapMessage() }}</span> }
+                </div>
+                @if (streamDevices().length) {
+                  <div class="device-list">
+                    @for (dev of streamDevices(); track dev.id) {
+                      <button
+                        class="device-btn"
+                        [class.device-active]="dev.id === streamActiveDeviceId()"
+                        (click)="selectStreamDevice(dev.id)"
+                        [disabled]="streamDeviceSetting()"
+                        [title]="dev.name + ' — ' + dev.channels + 'ch @ ' + dev.default_samplerate + 'Hz'"
+                      >
+                        <span class="device-check">{{ dev.id === streamActiveDeviceId() ? '✓' : '' }}</span>
+                        <span class="device-name">[{{ dev.id }}] {{ dev.name }}</span>
+                        <span class="device-meta">{{ dev.default_samplerate / 1000 | number:'1.0-0' }}kHz · {{ dev.channels }}ch</span>
+                      </button>
+                    }
+                  </div>
+                } @else if (!streamDeviceLoading()) {
+                  <div class="device-empty">No input devices found</div>
+                }
+              </div>
+            }
+
+            <!-- GUI notice -->
             @if (isGui(svc.id) && svc.managed) {
               <div class="gui-notice">
                 <span>🖥</span>
@@ -160,6 +192,7 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
               </div>
             }
 
+            <!-- Controls (managed) -->
             @if (svc.managed) {
               <div class="card-controls">
                 @if (svc.status === 'starting' || svc.status === 'stopping') {
@@ -203,6 +236,7 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
               </div>
             }
 
+            <!-- Unmanaged footer -->
             @if (!svc.managed) {
               <div class="card-unmanaged">
                 <span class="unmanaged-icon">ℹ</span>
@@ -218,6 +252,7 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
               </div>
             }
 
+            <!-- Log panel -->
             @if (svc.logsOpen) {
               <app-log-panel
                 [title]="svc.label"
@@ -306,28 +341,67 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
       gap: 1.25rem;
       padding: 1.25rem 1.5rem 2rem;
     }
+
+    /* Input device picker accent (green instead of blue) */
+    .device-picker--input {
+      background: rgba(34, 197, 94, 0.05);
+      border-bottom-color: rgba(34, 197, 94, 0.15);
+
+      .device-picker-label { color: var(--accent-green-light); }
+
+      .device-btn:hover:not(:disabled) {
+        background: rgba(34, 197, 94, 0.1);
+        border-color: rgba(34, 197, 94, 0.3);
+      }
+
+      .device-btn.device-active {
+        background: rgba(34, 197, 94, 0.15);
+        border-color: rgba(34, 197, 94, 0.4);
+        color: var(--accent-green-light);
+      }
+
+      .device-check { color: var(--accent-green-light); }
+    }
+
+    .device-swap-msg {
+      font-size: 0.7rem;
+      color: var(--accent-green-light);
+      font-style: italic;
+      margin-left: auto;
+    }
   `]
 })
 export class ServicesPageComponent extends PollingComponent {
   protected override pollingInterval = 4000;
 
-  services       = signal<ServiceDetail[]>([]);
-  launcherOnline = signal(false);
-  loading        = signal(false);
-  lastUpdated    = signal('—');
+  services          = signal<ServiceDetail[]>([]);
+  launcherOnline    = signal(false);
+  loading           = signal(false);
+  lastUpdated       = signal('—');
   bulkActionPending = signal(false);
 
-  audioDevices   = signal<AudioDevice[]>([]);
-  activeDeviceId = signal<number | null>(null);
-  deviceLoading  = signal(false);
-  deviceSetting  = signal(false);
+  // ── TTS (output) ──────────────────────────────────────────────────────────
+  ttsDevices        = signal<AudioDevice[]>([]);
+  ttsActiveDeviceId = signal<number | null>(null);
+  ttsDeviceLoading  = signal(false);
+  ttsDeviceSetting  = signal(false);
+
+  // ── Mic (input) ───────────────────────────────────────────────────────────
+  micDevices        = signal<AudioDevice[]>([]);
+  micActiveDeviceId = signal<number | null>(null);
+  micDeviceLoading  = signal(false);
+  micDeviceSetting  = signal(false);
+  micSwapMessage    = signal('');
+
+  // ── Stream audio (input) ──────────────────────────────────────────────────
+  streamDevices        = signal<AudioDevice[]>([]);
+  streamActiveDeviceId = signal<number | null>(null);
+  streamDeviceLoading  = signal(false);
+  streamDeviceSetting  = signal(false);
+  streamSwapMessage    = signal('');
 
   statusMeta(status: string) { return STATUS_META[status] ?? STATUS_META['unknown']; }
   isGui(id: string): boolean { return GUI_SERVICES.has(id); }
-
-  isErrorLine(line: string): boolean { return /error|failed|exception|traceback|fatal/i.test(line); }
-  isWarnLine(line: string):  boolean { return /warn|warning|⚠/i.test(line); }
-  isOkLine(line: string):    boolean { return /✅|healthy|ready|started|online|running/i.test(line); }
 
   openInVscode(svc: ServiceDetail): void {
     if (!svc.cwd) return;
@@ -355,13 +429,32 @@ export class ServicesPageComponent extends PollingComponent {
         if (svc.logsOpen) this.refreshLogs(svc);
       }
 
-      const tts = this.services().find(s => s.id === 'tts_service');
+      // Load device lists based on service status
+      const tts    = this.services().find(s => s.id === 'tts_service');
+      const mic    = this.services().find(s => s.id === 'microphone_audio_service');
+      const stream = this.services().find(s => s.id === 'stream_audio_service');
+
       if (tts?.status === 'online') {
-        await this.loadDevices();
+        await this.loadTtsDevices();
       } else {
-        this.audioDevices.set([]);
-        this.activeDeviceId.set(null);
+        this.ttsDevices.set([]);
+        this.ttsActiveDeviceId.set(null);
       }
+
+      if (mic?.status === 'online') {
+        await this.loadInputDevices('mic');
+      } else {
+        this.micDevices.set([]);
+        this.micActiveDeviceId.set(null);
+      }
+
+      if (stream?.status === 'online') {
+        await this.loadInputDevices('stream');
+      } else {
+        this.streamDevices.set([]);
+        this.streamActiveDeviceId.set(null);
+      }
+
     } catch {
       this.launcherOnline.set(false);
     } finally {
@@ -369,21 +462,49 @@ export class ServicesPageComponent extends PollingComponent {
     }
   }
 
-  async loadDevices() {
-    this.deviceLoading.set(true);
+  // ── Device loaders ────────────────────────────────────────────────────────
+
+  async loadTtsDevices() {
+    this.ttsDeviceLoading.set(true);
     try {
       const res = await fetch('/tts/devices');
       if (!res.ok) return;
       const data = await res.json();
-      this.audioDevices.set(data.devices ?? []);
-      this.activeDeviceId.set(data.active_device_id ?? null);
-    } catch { /* TTS service may not be ready */ }
-    finally { this.deviceLoading.set(false); }
+      this.ttsDevices.set(data.devices ?? []);
+      this.ttsActiveDeviceId.set(data.active_device_id ?? null);
+    } catch { /* silent */ }
+    finally { this.ttsDeviceLoading.set(false); }
   }
 
-  async selectDevice(deviceId: number) {
-    if (this.deviceSetting()) return;
-    this.deviceSetting.set(true);
+  async loadInputDevices(target: 'mic' | 'stream') {
+    const url = target === 'mic' ? '/mic-audio/devices' : '/stream-audio/devices';
+    if (target === 'mic') this.micDeviceLoading.set(true);
+    else this.streamDeviceLoading.set(true);
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      if (target === 'mic') {
+        this.micDevices.set(data.devices ?? []);
+        this.micActiveDeviceId.set(data.current_device_id ?? null);
+      } else {
+        this.streamDevices.set(data.devices ?? []);
+        this.streamActiveDeviceId.set(data.current_device_id ?? null);
+      }
+    } catch { /* silent */ }
+    finally {
+      if (target === 'mic') this.micDeviceLoading.set(false);
+      else this.streamDeviceLoading.set(false);
+    }
+  }
+
+  // ── Device selectors ──────────────────────────────────────────────────────
+
+  async selectTtsDevice(deviceId: number) {
+    if (this.ttsDeviceSetting()) return;
+    this.ttsDeviceSetting.set(true);
     try {
       const res = await fetch('/tts/device', {
         method: 'POST',
@@ -391,14 +512,50 @@ export class ServicesPageComponent extends PollingComponent {
         body: JSON.stringify({ device_id: deviceId }),
       });
       if (res.ok) {
-        this.activeDeviceId.set(deviceId);
-        this.audioDevices.update(devs =>
-          devs.map(d => ({ ...d, is_active: d.id === deviceId }))
-        );
+        this.ttsActiveDeviceId.set(deviceId);
+        this.ttsDevices.update(devs => devs.map(d => ({ ...d, is_active: d.id === deviceId })));
       }
     } catch { /* silent */ }
-    finally { this.deviceSetting.set(false); }
+    finally { this.ttsDeviceSetting.set(false); }
   }
+
+  async selectMicDevice(deviceId: number) {
+    if (this.micDeviceSetting()) return;
+    this.micDeviceSetting.set(true);
+    try {
+      const res = await fetch('/mic-audio/set-device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_id: deviceId }),
+      });
+      if (res.ok) {
+        this.micActiveDeviceId.set(deviceId);
+        this.micSwapMessage.set('✓ Device applied');
+        setTimeout(() => this.micSwapMessage.set(''), 3000);
+      }
+    } catch { /* silent */ }
+    finally { this.micDeviceSetting.set(false); }
+  }
+
+  async selectStreamDevice(deviceId: number) {
+    if (this.streamDeviceSetting()) return;
+    this.streamDeviceSetting.set(true);
+    try {
+      const res = await fetch('/stream-audio/set-device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_id: deviceId }),
+      });
+      if (res.ok) {
+        this.streamActiveDeviceId.set(deviceId);
+        this.streamSwapMessage.set('✓ Device applied');
+        setTimeout(() => this.streamSwapMessage.set(''), 3000);
+      }
+    } catch { /* silent */ }
+    finally { this.streamDeviceSetting.set(false); }
+  }
+
+  // ── Service lifecycle ─────────────────────────────────────────────────────
 
   async serviceAction(svc: ServiceDetail, action: 'start' | 'stop' | 'restart') {
     this.setActionPending(svc.id, true);
@@ -427,22 +584,23 @@ export class ServicesPageComponent extends PollingComponent {
     } catch { /* silent */ }
   }
 
+  async clearLogs(svc: ServiceDetail) {
+    try {
+      await fetch(`/launcher/services/${svc.id}/logs`, { method: 'DELETE' });
+      this.services.update(svcs => svcs.map(s => s.id === svc.id ? { ...s, logs: [] } : s));
+    } catch { /* silent */ }
+  }
+
   async startAll() {
     if (!this.launcherOnline() || this.bulkActionPending()) return;
-    
-    // Find managed services that are currently offline or unhealthy
     const toStart = this.services().filter(s => s.managed && (s.status === 'offline' || s.status === 'unhealthy'));
     if (!toStart.length) return;
-
     this.bulkActionPending.set(true);
     toStart.forEach(s => this.setActionPending(s.id, true));
-
     try {
-      // Fire off start requests concurrently
       await Promise.all(toStart.map(svc => fetch(`/launcher/services/${svc.id}/start`, { method: 'POST' })));
       await this.poll();
-      // Poll again after 5 seconds to catch services that take a moment to report 'healthy'
-      setTimeout(() => this.poll(), 5000); 
+      setTimeout(() => this.poll(), 5000);
     } finally {
       toStart.forEach(s => this.setActionPending(s.id, false));
       this.bulkActionPending.set(false);
@@ -451,37 +609,17 @@ export class ServicesPageComponent extends PollingComponent {
 
   async stopAll() {
     if (!this.launcherOnline() || this.bulkActionPending()) return;
-    
-    // Find managed services that are currently running or starting
     const toStop = this.services().filter(s => s.managed && (s.status === 'online' || s.status === 'unhealthy' || s.status === 'starting'));
     if (!toStop.length) return;
-
     this.bulkActionPending.set(true);
     toStop.forEach(s => this.setActionPending(s.id, true));
-
     try {
-      // Fire off stop requests concurrently
       await Promise.all(toStop.map(svc => fetch(`/launcher/services/${svc.id}/stop`, { method: 'POST' })));
       await this.poll();
-      // Poll again shortly after to ensure states resolve to offline
       setTimeout(() => this.poll(), 2000);
     } finally {
       toStop.forEach(s => this.setActionPending(s.id, false));
       this.bulkActionPending.set(false);
-    }
-  }
-
-  async clearLogs(svc: ServiceDetail) {
-    try {
-      // Tell the Python backend to clear the logs from memory
-      await fetch(`/launcher/services/${svc.id}/logs`, { method: 'DELETE' });
-      
-      // Update the UI immediately
-      this.services.update(svcs =>
-        svcs.map(s => s.id === svc.id ? { ...s, logs: [] } : s)
-      );
-    } catch { 
-      // silent fail 
     }
   }
 

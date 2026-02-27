@@ -4,34 +4,13 @@
     "ws": true,
     "secure": false
   },
-  "/breadcrumbs": {
-    "target": "http://localhost:8006",
-    "secure": false
-  },
-  "/summary_data": {
-    "target": "http://localhost:8006",
-    "secure": false
-  },
-  "/thread_stats": {
-    "target": "http://localhost:8006",
-    "secure": false
-  },
-  "/prompt_debug": {
-    "target": "http://localhost:8006",
-    "secure": false
-  },
-  "/prompt_size": {
-    "target": "http://localhost:8006",
-    "secure": false
-  },
-  "/health": {
-    "target": "http://localhost:8006",
-    "secure": false
-  },
-  "/gate_status": {
-    "target": "http://localhost:8001",
-    "secure": false
-  },
+  "/breadcrumbs": { "target": "http://localhost:8006", "secure": false },
+  "/summary_data": { "target": "http://localhost:8006", "secure": false },
+  "/thread_stats": { "target": "http://localhost:8006", "secure": false },
+  "/prompt_debug": { "target": "http://localhost:8006", "secure": false },
+  "/prompt_size":  { "target": "http://localhost:8006", "secure": false },
+  "/health":       { "target": "http://localhost:8006", "secure": false },
+  "/gate_status":  { "target": "http://localhost:8001", "secure": false },
   "/tts": {
     "target": "http://localhost:8004",
     "secure": false,
@@ -42,12 +21,16 @@
     "secure": false,
     "pathRewrite": { "^/twitch": "" }
   },
-  "/launcher": {
-    "target": "http://localhost:8010",
-    "secure": false
+  "/launcher": { "target": "http://localhost:8010", "secure": false },
+  "/memory":   { "target": "http://localhost:8009", "secure": false },
+  "/mic-audio": {
+    "target": "http://localhost:8014",
+    "secure": false,
+    "pathRewrite": { "^/mic-audio": "" }
   },
-  "/memory": {
-    "target": "http://localhost:8009",
-    "secure": false
+  "/stream-audio": {
+    "target": "http://localhost:8018",
+    "secure": false,
+    "pathRewrite": { "^/stream-audio": "" }
   }
 }

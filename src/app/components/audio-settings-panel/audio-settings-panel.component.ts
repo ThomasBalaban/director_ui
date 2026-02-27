@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
 
 interface AudioDevice {
   id: number;
@@ -15,6 +17,8 @@ interface DeviceResponse {
 
 @Component({
   selector: 'app-audio-settings-panel',
+  standalone: true,
+  imports: [CommonModule, FormsModule, HttpClientModule],
   template: `
     <div class="audio-settings-panel">
       <div class="panel-header">
@@ -32,9 +36,7 @@ interface DeviceResponse {
             [disabled]="micLoading">
             <option *ngIf="micLoading" [value]="null">Loading…</option>
             <option *ngIf="micError" [value]="null">⚠️ Service offline</option>
-            <option
-              *ngFor="let d of micDevices"
-              [value]="d.id">
+            <option *ngFor="let d of micDevices" [value]="d.id">
               [{{ d.id }}] {{ d.name }}
             </option>
           </select>
@@ -52,9 +54,7 @@ interface DeviceResponse {
             [disabled]="streamLoading">
             <option *ngIf="streamLoading" [value]="null">Loading…</option>
             <option *ngIf="streamError" [value]="null">⚠️ Service offline</option>
-            <option
-              *ngFor="let d of streamDevices"
-              [value]="d.id">
+            <option *ngFor="let d of streamDevices" [value]="d.id">
               [{{ d.id }}] {{ d.name }}
             </option>
           </select>
@@ -123,9 +123,6 @@ interface DeviceResponse {
       font-size: 12px;
       padding: 5px 8px;
       cursor: pointer;
-      max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
     .device-select:disabled { opacity: 0.5; cursor: default; }
     .device-select:focus { outline: none; border-color: #6060cc; }
@@ -164,9 +161,7 @@ export class AudioSettingsPanelComponent implements OnInit {
 
   constructor(private http: HttpClient) {}
 
-  ngOnInit() {
-    this.loadAll();
-  }
+  ngOnInit() { this.loadAll(); }
 
   loadAll() {
     this.loadDevices('mic');
@@ -181,21 +176,20 @@ export class AudioSettingsPanelComponent implements OnInit {
     this.http.get<DeviceResponse>(`${url}/devices`).subscribe({
       next: (res) => {
         if (target === 'mic') {
-          this.micDevices          = res.devices;
-          this.selectedMicDevice   = res.current_device_id;
-          this.micLoading          = false;
-          this.micOk               = true;
+          this.micDevices        = res.devices;
+          this.selectedMicDevice = res.current_device_id;
+          this.micLoading        = false;
+          this.micOk             = true;
         } else {
-          this.streamDevices          = res.devices;
-          this.selectedStreamDevice   = res.current_device_id;
-          this.streamLoading          = false;
-          this.streamOk               = true;
+          this.streamDevices        = res.devices;
+          this.selectedStreamDevice = res.current_device_id;
+          this.streamLoading        = false;
+          this.streamOk             = true;
         }
       },
-      error: (err) => {
+      error: () => {
         if (target === 'mic') { this.micLoading = false; this.micError = true; this.micOk = false; }
         else { this.streamLoading = false; this.streamError = true; this.streamOk = false; }
-        console.error(`[AudioSettings] Failed to load ${target} devices`, err);
       }
     });
   }
@@ -211,9 +205,8 @@ export class AudioSettingsPanelComponent implements OnInit {
         this.swapMessage = `${label} → device ${deviceId} applied`;
         setTimeout(() => this.swapMessage = '', 3000);
       },
-      error: (err) => {
-        this.swapMessage = `⚠️ Failed to set device`;
-        console.error(`[AudioSettings] set-device failed`, err);
+      error: () => {
+        this.swapMessage = '⚠️ Failed to set device';
         setTimeout(() => this.swapMessage = '', 3000);
       }
     });
