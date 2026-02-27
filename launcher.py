@@ -287,6 +287,12 @@ async def get_logs(name: str, last: int = 150):
         raise HTTPException(404, f"Unknown service: {name}")
     return {"lines": list(_logs[name])[-last:]}
 
+@app.delete("/launcher/services/{name}/logs")
+async def clear_logs(name: str):
+    if name not in SERVICE_DEFS:
+        raise HTTPException(404, f"Unknown service: {name}")
+    _logs[name].clear()
+    return {"ok": True}
 
 @app.get("/launcher/health")
 async def health():

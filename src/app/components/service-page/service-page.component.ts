@@ -51,6 +51,17 @@ const GUI_SERVICES = new Set(['desktop_monitor']);
           </span>
         </div>
         <div class="page-header-right">
+          <button class="btn btn-start" 
+                  [disabled]="!launcherOnline() || bulkActionPending()" 
+                  (click)="startAll()">
+            ▶ Start All
+          </button>
+          <button class="btn btn-stop" 
+                  [disabled]="!launcherOnline() || bulkActionPending()" 
+                  (click)="stopAll()">
+            ■ Stop All
+          </button>
+
           <span class="last-update">Updated {{ lastUpdated() }}</span>
           <button class="btn btn-ghost" (click)="poll()" [disabled]="loading()">
             <span [class.spinning]="loading()">↻</span> Refresh
@@ -304,6 +315,7 @@ export class ServicesPageComponent extends PollingComponent {
   launcherOnline = signal(false);
   loading        = signal(false);
   lastUpdated    = signal('—');
+  bulkActionPending = signal(false);
 
   audioDevices   = signal<AudioDevice[]>([]);
   activeDeviceId = signal<number | null>(null);
@@ -415,10 +427,62 @@ export class ServicesPageComponent extends PollingComponent {
     } catch { /* silent */ }
   }
 
-  clearLogs(svc: ServiceDetail): void {
-    this.services.update(svcs =>
-      svcs.map(s => s.id === svc.id ? { ...s, logs: [] } : s)
-    );
+  async startAll() {
+    if (!this.launcherOnline() || this.bulkActionPending()) return;
+    
+    // Find managed services that are currently offline or unhealthy
+    const toStart = this.services().filter(s => s.managed && (s.status === 'offline' || s.status === 'unhealthy'));
+    if (!toStart.length) return;
+
+    this.bulkActionPending.set(true);
+    toStart.forEach(s => this.setActionPending(s.id, true));
+
+    try {
+      // Fire off start requests concurrently
+      await Promise.all(toStart.map(svc => fetch(`/launcher/services/${svc.id}/start`, { method: 'POST' })));
+      await this.poll();
+      // Poll again after 5 seconds to catch services that take a moment to report 'healthy'
+      setTimeout(() => this.poll(), 5000); 
+    } finally {
+      toStart.forEach(s => this.setActionPending(s.id, false));
+      this.bulkActionPending.set(false);
+    }
+  }
+
+  async stopAll() {
+    if (!this.launcherOnline() || this.bulkActionPending()) return;
+    
+    // Find managed services that are currently running or starting
+    const toStop = this.services().filter(s => s.managed && (s.status === 'online' || s.status === 'unhealthy' || s.status === 'starting'));
+    if (!toStop.length) return;
+
+    this.bulkActionPending.set(true);
+    toStop.forEach(s => this.setActionPending(s.id, true));
+
+    try {
+      // Fire off stop requests concurrently
+      await Promise.all(toStop.map(svc => fetch(`/launcher/services/${svc.id}/stop`, { method: 'POST' })));
+      await this.poll();
+      // Poll again shortly after to ensure states resolve to offline
+      setTimeout(() => this.poll(), 2000);
+    } finally {
+      toStop.forEach(s => this.setActionPending(s.id, false));
+      this.bulkActionPending.set(false);
+    }
+  }
+
+  async clearLogs(svc: ServiceDetail) {
+    try {
+      // Tell the Python backend to clear the logs from memory
+      await fetch(`/launcher/services/${svc.id}/logs`, { method: 'DELETE' });
+      
+      // Update the UI immediately
+      this.services.update(svcs =>
+        svcs.map(s => s.id === svc.id ? { ...s, logs: [] } : s)
+      );
+    } catch { 
+      // silent fail 
+    }
   }
 
   private setActionPending(id: string, pending: boolean) {
