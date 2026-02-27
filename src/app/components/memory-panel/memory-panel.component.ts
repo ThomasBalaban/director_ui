@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Memory } from '../../models/director.models';
+import { Memory } from '../../shared/interfaces/director.interfaces';
 
 @Component({
   selector: 'app-memory-panel',

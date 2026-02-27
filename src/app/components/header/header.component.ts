@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Streamer } from '../../models/director.models';
+import { Streamer } from '../../shared/interfaces/director.interfaces';
 import { NamiStatusComponent } from '../nami-status/nami-status.component';
 
 @Component({

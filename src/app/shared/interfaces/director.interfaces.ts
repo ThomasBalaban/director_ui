@@ -1,5 +1,4 @@
 // === Event & Score Models ===
-
 export interface EventScore {
   interestingness: number;
   urgency: number;
@@ -18,7 +17,6 @@ export interface ScoredEvent {
 }
 
 // === Directive Models ===
-
 export interface Directive {
   objective: string;
   tone: string;
@@ -29,7 +27,6 @@ export interface Directive {
 }
 
 // === User Profile Models ===
-
 export interface UserFact {
   content: string;
   timestamp: number;
@@ -57,7 +54,6 @@ export interface UserProfile {
 }
 
 // === Memory Models ===
-
 export interface Memory {
   source: string;
   text: string;
@@ -66,7 +62,6 @@ export interface Memory {
 }
 
 // === Adaptive Controller Models ===
-
 export interface SocialBattery {
   current: number;
   max: number;
@@ -84,7 +79,6 @@ export interface AdaptiveState {
 }
 
 // === Main Director State ===
-
 export interface DirectorState {
   summary: string;
   raw_context: string;
@@ -104,15 +98,8 @@ export interface DirectorState {
 }
 
 // === Socket Event Payloads ===
-
-export interface VisionContext {
-  context: string;
-}
-
-export interface SpokenWordContext {
-  context: string;
-}
-
+export interface VisionContext { context: string; }
+export interface SpokenWordContext { context: string; }
 export interface AudioContext {
   context: string;
   is_partial: boolean;
@@ -140,7 +127,6 @@ export interface AiContextSuggestion {
 }
 
 // === Streamer Config ===
-
 export interface Streamer {
   id: string;
   display_name: string;
@@ -151,11 +137,33 @@ export interface StreamersConfig {
 }
 
 // === Service Monitor ===
-
 export interface ServiceStatus {
   id: string;
   label: string;
   port: number;
   managed: boolean;
   status: 'online' | 'offline' | 'starting' | 'stopping' | 'unhealthy' | 'unknown';
+}
+
+// === UI / Dashboard Specific Models ===
+export interface ChatMessage {
+  username: string;
+  message: string;
+  isNami?: boolean;
+  isMention?: boolean;
+  timestamp?: number;
+}
+
+export interface AudioLogEntry {
+  text: string;
+  sessionId?: string;
+  isPartial?: boolean;
+  timestamp?: number;
+}
+
+export interface ScoreEntry {
+  score: number;
+  source: string;
+  text: string;
+  timestamp?: number;
 }

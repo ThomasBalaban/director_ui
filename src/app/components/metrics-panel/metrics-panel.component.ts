@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AdaptiveState } from '../../models/director.models';
+import { AdaptiveState } from '../../shared/interfaces/director.interfaces';
 
 @Component({
   selector: 'app-metrics-panel',

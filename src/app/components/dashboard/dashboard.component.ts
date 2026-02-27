@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { DirectorService, ChatMessage, AudioLogEntry, ScoreEntry } from '../../shared/services/dashboard.service';
-import { DirectorState, BotReply, Streamer } from '../../models/director.models';
+import { DirectorState, BotReply, Streamer } from '../../shared/interfaces/director.interfaces';
 
 // Child Components
 import { HeaderComponent } from '../header/header.component';

@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { UserProfile } from '../../models/director.models';
+import { UserProfile } from '../../shared/interfaces/director.interfaces';
 
 @Component({
   selector: 'app-user-panel',

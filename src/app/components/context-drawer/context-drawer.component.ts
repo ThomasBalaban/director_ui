@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { BotReply } from '../../models/director.models';
+import { BotReply } from '../../shared/interfaces/director.interfaces';
 
 @Component({
   selector: 'app-context-drawer',
