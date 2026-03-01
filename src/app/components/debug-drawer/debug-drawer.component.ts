@@ -35,6 +35,16 @@ type DrawerPanel = 'thread-stats' | 'prompt-debug' | null;
 
       <div class="nav-divider"></div>
 
+      <!-- Sensors -->
+      <a
+        routerLink="/sensors"
+        routerLinkActive="active"
+        class="nav-btn nav-link"
+        title="Raw Sensor Feeds">
+        🔭
+      </a>
+      <div class="nav-divider"></div>
+
       <!-- Panel toggles -->
       <button
         class="nav-btn"

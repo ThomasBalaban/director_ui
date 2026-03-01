@@ -35,23 +35,9 @@
       ></app-interest-graph>
     </div>
     
-    <!-- Column 2: Context Panels (Vision, Microphone Audio, Desktop Audio) -->
+    <!-- Column 2: Sensory Context (classified events from context_service) -->
     <div class="column">
-      <app-context-panel
-        title="👁️ Vision (12s)"
-        [logs]="visionLog"
-      ></app-context-panel>
-      
-      <app-context-panel
-        title="🎤 Microphone Audio (30s)"
-        [logs]="spokenLog"
-      ></app-context-panel>
-      
-      <app-context-panel
-        title="🖥️ Desktop Audio (12s)"
-        [audioLogs]="audioLog"
-        [isAudioPanel]="true"
-      ></app-context-panel>
+      <app-sensors-page></app-sensors-page>
     </div>
     
     <!-- Column 3: Chat -->

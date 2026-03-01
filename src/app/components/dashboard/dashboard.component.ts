@@ -10,7 +10,7 @@ import { HeaderComponent } from '../header/header.component';
 import { DirectivesPanelComponent } from '../directives-panel/directives-panel.component';
 import { SummaryPanelComponent } from '../summary-panel/summary-panel.component';
 import { InterestGraphComponent } from '../interest-graph/interest-graph.component';
-import { ContextPanelComponent } from '../context-panel/context-panel.component';
+import { SensorsPageComponent } from '../sensors-page/sensors-page.component'
 import { ChatPanelComponent } from '../chat-panel/chat-panel.component';
 import { MetricsPanelComponent } from '../metrics-panel/metrics-panel.component';
 import { MemoryPanelComponent } from '../memory-panel/memory-panel.component';
@@ -27,7 +27,7 @@ import { ContextDrawerComponent } from '../context-drawer/context-drawer.compone
     DirectivesPanelComponent,
     SummaryPanelComponent,
     InterestGraphComponent,
-    ContextPanelComponent,
+    SensorsPageComponent,
     ChatPanelComponent,
     MetricsPanelComponent,
     MemoryPanelComponent,
@@ -73,7 +73,6 @@ import { ContextDrawerComponent } from '../context-drawer/context-drawer.compone
   `]
 })
 export class DashboardComponent implements OnInit, OnDestroy {
-  // All data comes directly from the service's BehaviorSubjects
   directorState: DirectorState | null = null;
   isConnected = false;
   streamers: Streamer[] = [];
@@ -124,7 +123,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Read accumulated logs directly from service — already persisted
     this.subscriptions.add(this.directorService.visionLog$.subscribe(log => this.visionLog = log));
     this.subscriptions.add(this.directorService.spokenLog$.subscribe(log => this.spokenLog = log));
     this.subscriptions.add(this.directorService.audioLog$.subscribe(log => this.audioLog = log));
@@ -132,7 +130,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.subscriptions.add(this.directorService.namiReplies$.subscribe(replies => this.namiReplies = replies));
     this.subscriptions.add(this.directorService.scoreHistory$.subscribe(history => this.scoreHistory = history));
 
-    // Pending AI context
     this.subscriptions.add(
       this.directorService.pendingAiContext$.subscribe(ctx => {
         if (ctx === null) {
@@ -140,7 +137,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
           return;
         }
         if (!this.contextLocked) {
-          // Auto-accept when unlocked
           this.manualContext = ctx;
           this.directorService.clearPendingAiContext();
         } else {
@@ -149,8 +145,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       })
     );
   }
-
-  // === Child component event handlers ===
 
   onStreamerChange(streamerId: string): void {
     this.selectedStreamer = streamerId;
