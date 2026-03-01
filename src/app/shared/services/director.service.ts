@@ -69,10 +69,11 @@ export class DirectorService implements OnDestroy {
       this.latestContextSubject.next(data);
     });
 
-    // Listen for Ollama's thoughts
     this.socket.on('ai_response', (data: any) => {
       this.latestAiResponseSubject.next(data);
     });
+
+    this.setupSocketListeners(); // ← this was missing
   }
 
   private setupSocketListeners(): void {

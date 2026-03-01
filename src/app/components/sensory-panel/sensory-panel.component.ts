@@ -1,15 +1,21 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { DirectorService } from '../../shared/services/director.service';
 
-// This interface matches the new Python dictionary emitted every 3 seconds
 export interface ContinuousContext {
   type: string;
   context_string: string;
   timestamp: string;
 }
+
+interface HistoryEntry {
+  snapshot: ContinuousContext;
+  aiResponse: { text: string; timestamp: string } | null;
+}
+
+const MAX_HISTORY = 30;
 
 @Component({
   selector: 'app-sensory-panel',
@@ -18,46 +24,54 @@ export interface ContinuousContext {
   template: `
     <div class="panel sensory-panel">
 
+      <!-- Header -->
       <div class="panel-title sensory-header">
         <div class="sensory-header-left">
           <span>🧠 Sensory Aggregator</span>
-          <span class="sensory-live" [class.sensory-live--active]="!!latestSnapshot">
+          <span class="sensory-live" [class.sensory-live--active]="!!current">
             <span class="live-pip"></span>
-            {{ latestSnapshot ? 'STREAMING' : 'WAITING' }}
+            {{ current ? 'STREAMING' : 'WAITING' }}
+          </span>
+          <span class="queue-badge" *ngIf="pendingSnapshot" title="One snapshot queued, waiting for current evaluation">
+            ⏳ 1 queued
           </span>
         </div>
-        <a routerLink="/sensors" class="raw-feeds-link" title="View raw sensor feeds">
-          Raw feeds →
-        </a>
+        <div class="header-right">
+          <span class="history-count" *ngIf="history.length > 0">{{ history.length }} past</span>
+          <a routerLink="/sensors" class="raw-feeds-link">Raw feeds →</a>
+        </div>
       </div>
 
       <div class="panel-content sensory-content">
 
-        <div class="monitor-container" *ngIf="latestSnapshot; else noEvent">
-          
-          <div class="monitor-top-bar">
-            <div class="monitor-brand">
-              <span class="pulse-icon">⚡</span>
-              <span>LIVE OBSERVER FEED</span>
-            </div>
-            <div class="monitor-time">
-              Updated: {{ formatTime(latestSnapshot.timestamp) }}
-            </div>
+        <!-- ── CURRENT SNAPSHOT PANE ── -->
+        <div class="current-pane" *ngIf="current; else noEvent">
+
+          <div class="pane-label">
+            <span class="pulse-icon">⚡</span>
+            <span>CURRENT</span>
+            <span class="pane-time">{{ formatTime(current.snapshot.timestamp) }}</span>
           </div>
 
-          <div class="monitor-screen">
-            <pre class="monitor-text">{{ latestSnapshot.context_string }}</pre>
+          <div class="current-screen">
+            <pre class="current-text">{{ current.snapshot.context_string }}</pre>
           </div>
-          
-          <div class="monitor-footer">
-            <div class="status-indicator">
-              <span class="status-dot" [style.background]="latestAiResponse?.text === '<SILENCE>' ? '#9ca3af' : '#4ade80'" [style.box-shadow]="latestAiResponse?.text === '<SILENCE>' ? 'none' : '0 0 5px #4ade80'"></span>
-              <span *ngIf="!latestAiResponse">Awaiting Ollama Evaluation...</span>
-              <span *ngIf="latestAiResponse?.text === '<SILENCE>'">Thinking... (Decided to stay silent)</span>
-              <span *ngIf="latestAiResponse && latestAiResponse.text !== '<SILENCE>'" style="color: #4ade80;">
-                🎙️ {{ latestAiResponse.text }}
-              </span>
-            </div>
+
+          <div class="current-footer">
+            <span
+              class="status-dot"
+              [style.background]="getAiDotColor(current)"
+              [style.box-shadow]="current.aiResponse && current.aiResponse.text !== '<SILENCE>' ? '0 0 5px #4ade80' : 'none'"
+            ></span>
+            <span *ngIf="!current.aiResponse" class="footer-text footer-text--waiting">
+              Awaiting evaluation...
+            </span>
+            <span *ngIf="current.aiResponse?.text === '<SILENCE>'" class="footer-text footer-text--silence">
+              Silent (decided not to respond)
+            </span>
+            <span *ngIf="current.aiResponse && current.aiResponse.text !== '<SILENCE>'" class="footer-text footer-text--response">
+              🎙️ {{ current.aiResponse.text }}
+            </span>
           </div>
 
         </div>
@@ -66,9 +80,47 @@ export interface ContinuousContext {
           <div class="no-event">
             <span class="no-event-icon">🔭</span>
             <span>Waiting for sensory feed...</span>
-            <span class="no-event-hint">Aggregator will emit snapshots every 3 seconds</span>
+            <span class="no-event-hint">Aggregator emits snapshots every 3 seconds</span>
           </div>
         </ng-template>
+
+        <!-- ── HISTORY PANE ── -->
+        <div class="history-pane" *ngIf="history.length > 0">
+
+          <div class="history-pane-label">
+            <span>📋 PREVIOUS SNAPSHOTS</span>
+            <span class="history-count-inline">{{ history.length }} / {{ maxHistory }}</span>
+          </div>
+
+          <div class="history-scroll" #historyScroll>
+            <div
+              *ngFor="let entry of history.slice().reverse(); let i = index"
+              class="history-entry"
+            >
+              <div class="history-entry-bar">
+                <span class="history-entry-num">#{{ history.length - i }}</span>
+                <span class="history-entry-time">{{ formatTime(entry.snapshot.timestamp) }}</span>
+                <span
+                  class="history-dot"
+                  [style.background]="getAiDotColor(entry)"
+                  [title]="getAiDotTitle(entry)"
+                ></span>
+                <span class="history-ai-text" *ngIf="entry.aiResponse && entry.aiResponse.text !== '<SILENCE>'">
+                  {{ entry.aiResponse.text }}
+                </span>
+                <span class="history-ai-silence" *ngIf="entry.aiResponse?.text === '<SILENCE>'">
+                  —
+                </span>
+              </div>
+
+              <div class="history-entry-body">
+                <pre class="history-text">{{ entry.snapshot.context_string }}</pre>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
 
       </div>
     </div>
@@ -94,6 +146,12 @@ export interface ContinuousContext {
     }
 
     .sensory-header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .header-right {
       display: flex;
       align-items: center;
       gap: 0.75rem;
@@ -130,9 +188,20 @@ export interface ContinuousContext {
       animation: pip-pulse 1.5s ease-in-out infinite;
     }
 
-    @keyframes pip-pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+    .queue-badge {
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: var(--accent-yellow-light);
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: var(--radius-full);
+      padding: 2px 7px;
+    }
+
+    .history-count {
+      font-size: 0.65rem;
+      color: var(--text-dimmer);
+      font-family: monospace;
     }
 
     .raw-feeds-link {
@@ -155,95 +224,205 @@ export interface ContinuousContext {
     .sensory-content {
       display: flex;
       flex-direction: column;
-      gap: 0.875rem;
+      gap: 0.75rem;
       height: 100%;
+      padding: 0.75rem;
+      overflow: hidden;
     }
 
-    /* ── Live Monitor UI ── */
-    .monitor-container {
+    /* ── Current pane ── */
+    .current-pane {
       display: flex;
       flex-direction: column;
-      flex: 1;
-      border: 1px solid var(--border-faint);
+      border: 1px solid rgba(99, 226, 183, 0.4);
       border-radius: var(--radius-md);
-      overflow: hidden;
       background: #0a0a0a;
-      box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+      box-shadow: 0 0 12px rgba(99, 226, 183, 0.06);
+      flex-shrink: 0;
     }
 
-    .monitor-top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.4rem 0.75rem;
-      background: var(--surface-2);
-      border-bottom: 1px solid var(--border-faint);
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-    }
-
-    .monitor-brand {
+    .pane-label {
       display: flex;
       align-items: center;
       gap: 6px;
+      padding: 0.35rem 0.75rem;
+      background: rgba(99, 226, 183, 0.07);
+      border-bottom: 1px solid rgba(99, 226, 183, 0.2);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
       color: #6ee7b7;
     }
 
-    .pulse-icon {
-      font-size: 0.7rem;
-    }
+    .pulse-icon { font-size: 0.7rem; }
 
-    .monitor-time {
-      color: var(--text-dimmer);
+    .pane-time {
+      margin-left: auto;
       font-family: monospace;
+      color: var(--text-dimmer);
+      font-weight: 400;
     }
 
-    .monitor-screen {
-      flex: 1;
-      padding: 0.75rem;
+    .current-screen {
+      padding: 0.65rem 0.75rem;
       overflow-y: auto;
-      max-height: 300px;
+      max-height: 260px;
     }
 
-    .monitor-text {
+    .current-text {
       margin: 0;
-      font-size: 0.75rem;
-      line-height: 1.6;
+      font-size: 0.72rem;
+      line-height: 1.55;
       color: #a7f3d0;
       white-space: pre-wrap;
       word-wrap: break-word;
       font-family: 'Courier New', monospace;
     }
 
-    .monitor-footer {
+    .current-footer {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
       padding: 0.3rem 0.75rem;
       background: var(--surface-1);
       border-top: 1px solid var(--border-faint);
-    }
-
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.65rem;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      min-height: 28px;
     }
 
     .status-dot {
       width: 6px;
       height: 6px;
-      background: #facc15;
       border-radius: 50%;
-      box-shadow: 0 0 5px #facc15;
-      animation: blink 2s infinite;
+      flex-shrink: 0;
+      margin-top: 4px;
     }
 
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
+    .footer-text {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      line-height: 1.5;
+      flex: 1;
+    }
+
+    .footer-text--waiting  { color: var(--text-dimmer); font-style: italic; animation: blink 2s infinite; }
+    .footer-text--silence  { color: #6b7280; }
+    .footer-text--response { color: #4ade80; text-transform: none; font-size: 0.7rem; }
+
+    /* ── History pane ── */
+    .history-pane {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border-faint);
+      border-radius: var(--radius-md);
+      background: var(--surface-1);
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .history-pane-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.35rem 0.75rem;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border-faint);
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--text-dimmer);
+      flex-shrink: 0;
+    }
+
+    .history-count-inline {
+      font-family: monospace;
+      font-weight: 400;
+    }
+
+    .history-scroll {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── History entries ── */
+    .history-entry {
+      border-bottom: 1px solid var(--border-faint);
+      flex-shrink: 0;
+
+      &:last-child { border-bottom: none; }
+    }
+
+    .history-entry-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.3rem 0.75rem;
+      background: var(--surface-2);
+    }
+
+    .history-entry-num {
+      font-size: 0.62rem;
+      font-family: monospace;
+      color: var(--text-dimmer);
+      flex-shrink: 0;
+      min-width: 2rem;
+    }
+
+    .history-entry-time {
+      font-size: 0.62rem;
+      font-family: monospace;
+      color: var(--text-dimmer);
+      flex-shrink: 0;
+    }
+
+    .history-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .history-ai-text {
+      font-size: 0.68rem;
+      color: #4ade80;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .history-ai-silence {
+      font-size: 0.68rem;
+      color: var(--text-dimmer);
+      flex: 1;
+    }
+
+    .history-entry-body {
+      padding: 0.4rem 0.75rem;
+      background: #0a0a0a;
+      position: relative;
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 20px;
+        background: linear-gradient(transparent, #0a0a0a);
+        pointer-events: none;
+      }
+    }
+
+    .history-text {
+      margin: 0;
+      font-size: 0.65rem;
+      line-height: 1.4;
+      color: #4a7c6a;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'Courier New', monospace;
     }
 
     /* ── No event ── */
@@ -263,45 +442,108 @@ export interface ContinuousContext {
 
     .no-event-icon { font-size: 1.5rem; opacity: 0.4; margin-bottom: 0.5rem; }
     .no-event-hint { font-size: 0.7rem; color: var(--text-dimmer); }
+
+    @keyframes pip-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
   `]
 })
-export class SensoryPanelComponent implements OnInit, OnDestroy {
-  latestSnapshot: ContinuousContext | null = null;
+export class SensoryPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
+  current: HistoryEntry | null = null;
+  history: HistoryEntry[] = [];
+  pendingSnapshot: ContinuousContext | null = null;
+  readonly maxHistory = MAX_HISTORY;
+
   private subs = new Subscription();
-  latestAiResponse: {text: string, timestamp: string} | null = null;
+  private shouldScrollHistory = false;
+
+  @ViewChild('historyScroll') historyScrollRef!: ElementRef;
 
   constructor(private directorService: DirectorService) {}
 
   ngOnInit(): void {
-    // We subscribe to the latestAiContext$ from your service.
     this.subs.add(
       this.directorService.latestAiContext$.subscribe((ctx: any) => {
-        // This ensures that whether your service passes the full object or just the string, 
-        // the UI handles it gracefully.
+        if (!ctx) return;
+
+        let snapshot: ContinuousContext;
         if (typeof ctx === 'string') {
-          this.latestSnapshot = { 
-            type: 'continuous_context', 
-            context_string: ctx, 
-            timestamp: new Date().toISOString() 
-          };
-        } else if (ctx && ctx.context_string) {
-          this.latestSnapshot = ctx;
+          snapshot = { type: 'continuous_context', context_string: ctx, timestamp: new Date().toISOString() };
+        } else if (ctx?.context_string) {
+          snapshot = ctx as ContinuousContext;
+        } else {
+          return;
+        }
+
+        if (!this.current) {
+          // Nothing running — start immediately
+          this.current = { snapshot, aiResponse: null };
+        } else if (!this.current.aiResponse) {
+          // Current hasn't been evaluated yet — queue, keeping only the latest
+          this.pendingSnapshot = snapshot;
+        } else {
+          // Current is resolved — promote it and start the new one
+          this._promoteCurrent(snapshot);
         }
       })
     );
 
     this.subs.add(
       this.directorService.latestAiResponse$.subscribe(res => {
-        this.latestAiResponse = res;
+        if (!res || !this.current) return;
+
+        // Attach response to current
+        this.current = { ...this.current, aiResponse: res };
+
+        // If something was queued while we were waiting, promote and start it now
+        if (this.pendingSnapshot) {
+          this._promoteCurrent(this.pendingSnapshot);
+          this.pendingSnapshot = null;
+        }
       })
     );
   }
 
+  private _promoteCurrent(nextSnapshot: ContinuousContext): void {
+    if (this.current) {
+      this.history = [...this.history, this.current].slice(-MAX_HISTORY);
+      this.shouldScrollHistory = true;
+    }
+    this.current = { snapshot: nextSnapshot, aiResponse: null };
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.shouldScrollHistory && this.historyScrollRef) {
+      this.historyScrollRef.nativeElement.scrollTop = 0;
+      this.shouldScrollHistory = false;
+    }
+  }
+
+  getAiDotColor(entry: HistoryEntry): string {
+    if (!entry.aiResponse) return '#facc15';
+    if (entry.aiResponse.text === '<SILENCE>') return '#6b7280';
+    return '#4ade80';
+  }
+
+  getAiDotTitle(entry: HistoryEntry): string {
+    if (!entry.aiResponse) return 'Awaiting evaluation';
+    if (entry.aiResponse.text === '<SILENCE>') return 'Silent';
+    return entry.aiResponse.text;
+  }
+
   formatTime(iso: string): string {
     try {
-      return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    } catch { 
-      return iso; 
+      return new Date(iso).toLocaleTimeString('en-US', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      });
+    } catch {
+      return iso;
     }
   }
 
