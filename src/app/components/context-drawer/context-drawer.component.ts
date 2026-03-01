@@ -1,6 +1,5 @@
 import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { BotReply } from '../../shared/interfaces/director.interfaces';
 
 @Component({
   selector: 'app-context-drawer',
@@ -15,7 +14,7 @@ import { BotReply } from '../../shared/interfaces/director.interfaces';
 
     <aside class="drawer" [class.open]="isOpen">
       <div class="drawer-header">
-        <h3>Nami Prompt Details</h3>
+        <h3>{{ title }}</h3>
         <button class="close-btn" (click)="close.emit()">✕</button>
       </div>
 
@@ -23,7 +22,7 @@ import { BotReply } from '../../shared/interfaces/director.interfaces';
 
         <div class="section">
           <div class="section-label-row">
-            <h4 class="section-label">Prompt</h4>
+            <h4 class="section-label">{{ promptLabel }}</h4>
             <button
               class="copy-btn"
               [class.copied]="copiedPrompt"
@@ -38,7 +37,7 @@ import { BotReply } from '../../shared/interfaces/director.interfaces';
 
         <div class="section">
           <div class="section-label-row">
-            <h4 class="section-label">Response</h4>
+            <h4 class="section-label">{{ replyLabel }}</h4>
             <button
               class="copy-btn"
               [class.copied]="copiedReply"
@@ -220,8 +219,12 @@ import { BotReply } from '../../shared/interfaces/director.interfaces';
 })
 export class ContextDrawerComponent {
   @Input() isOpen = false;
-  @Input() data: BotReply | null = null;
+  @Input() data: any | null = null;
   @Output() close = new EventEmitter<void>();
+
+  @Input() title = 'Nami Prompt Details';
+  @Input() promptLabel = 'Prompt';
+  @Input() replyLabel = 'Response';
 
   copiedPrompt = false;
   copiedReply  = false;

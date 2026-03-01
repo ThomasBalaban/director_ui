@@ -2,29 +2,16 @@ import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked }
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { DirectorService } from '../../shared/services/director.service';
-
-export interface ContinuousContext {
-  type: string;
-  context_string: string;
-  timestamp: string;
-}
-
-interface HistoryEntry {
-  snapshot: ContinuousContext;
-  aiResponse: { text: string; timestamp: string } | null;
-}
-
-const MAX_HISTORY = 30;
+import { DirectorService, ContinuousContext, HistoryEntry } from '../../shared/services/director.service';
+import { ContextDrawerComponent } from '../context-drawer/context-drawer.component';
 
 @Component({
   selector: 'app-sensory-panel',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, ContextDrawerComponent],
   template: `
     <div class="panel sensory-panel">
 
-      <!-- Header -->
       <div class="panel-title sensory-header">
         <div class="sensory-header-left">
           <span>🧠 Sensory Aggregator</span>
@@ -44,7 +31,6 @@ const MAX_HISTORY = 30;
 
       <div class="panel-content sensory-content">
 
-        <!-- ── CURRENT SNAPSHOT PANE ── -->
         <div class="current-pane" *ngIf="current; else noEvent">
 
           <div class="pane-label">
@@ -84,7 +70,6 @@ const MAX_HISTORY = 30;
           </div>
         </ng-template>
 
-        <!-- ── HISTORY PANE ── -->
         <div class="history-pane" *ngIf="history.length > 0">
 
           <div class="history-pane-label">
@@ -96,6 +81,7 @@ const MAX_HISTORY = 30;
             <div
               *ngFor="let entry of history.slice().reverse(); let i = index"
               class="history-entry"
+              (click)="openDrawer(entry)"
             >
               <div class="history-entry-bar">
                 <span class="history-entry-num">#{{ history.length - i }}</span>
@@ -124,6 +110,15 @@ const MAX_HISTORY = 30;
 
       </div>
     </div>
+
+    <app-context-drawer
+      [isOpen]="isDrawerOpen"
+      [data]="selectedDrawerEntry"
+      title="Sensory Snapshot Details"
+      promptLabel="Sensory Context"
+      replyLabel="AI Evaluation"
+      (close)="isDrawerOpen = false">
+    </app-context-drawer>
   `,
   styles: [`
     :host {
@@ -351,16 +346,22 @@ const MAX_HISTORY = 30;
     .history-entry {
       border-bottom: 1px solid var(--border-faint);
       flex-shrink: 0;
+      cursor: pointer;
+      transition: background-color var(--transition-fast);
 
       &:last-child { border-bottom: none; }
+
+      &:hover .history-entry-bar { background: var(--surface-3); }
+      &:hover .history-entry-body { background: #111; }
     }
 
     .history-entry-bar {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
       padding: 0.3rem 0.75rem;
       background: var(--surface-2);
+      transition: background-color var(--transition-fast);
     }
 
     .history-entry-num {
@@ -383,15 +384,16 @@ const MAX_HISTORY = 30;
       height: 5px;
       border-radius: 50%;
       flex-shrink: 0;
+      margin-top: 5px;
     }
 
     .history-ai-text {
       font-size: 0.68rem;
       color: #4ade80;
       flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      white-space: normal;
+      line-height: 1.4;
+      word-wrap: break-word;
     }
 
     .history-ai-silence {
@@ -404,6 +406,7 @@ const MAX_HISTORY = 30;
       padding: 0.4rem 0.75rem;
       background: #0a0a0a;
       position: relative;
+      transition: background-color var(--transition-fast);
 
       &::after {
         content: '';
@@ -458,10 +461,15 @@ export class SensoryPanelComponent implements OnInit, OnDestroy, AfterViewChecke
   current: HistoryEntry | null = null;
   history: HistoryEntry[] = [];
   pendingSnapshot: ContinuousContext | null = null;
-  readonly maxHistory = MAX_HISTORY;
+  readonly maxHistory = 30;
+
+  // Drawer state
+  selectedDrawerEntry: any = null;
+  isDrawerOpen = false;
 
   private subs = new Subscription();
   private shouldScrollHistory = false;
+  private lastHistoryLength = 0;
 
   @ViewChild('historyScroll') historyScrollRef!: ElementRef;
 
@@ -469,53 +477,31 @@ export class SensoryPanelComponent implements OnInit, OnDestroy, AfterViewChecke
 
   ngOnInit(): void {
     this.subs.add(
-      this.directorService.latestAiContext$.subscribe((ctx: any) => {
-        if (!ctx) return;
-
-        let snapshot: ContinuousContext;
-        if (typeof ctx === 'string') {
-          snapshot = { type: 'continuous_context', context_string: ctx, timestamp: new Date().toISOString() };
-        } else if (ctx?.context_string) {
-          snapshot = ctx as ContinuousContext;
-        } else {
-          return;
-        }
-
-        if (!this.current) {
-          // Nothing running — start immediately
-          this.current = { snapshot, aiResponse: null };
-        } else if (!this.current.aiResponse) {
-          // Current hasn't been evaluated yet — queue, keeping only the latest
-          this.pendingSnapshot = snapshot;
-        } else {
-          // Current is resolved — promote it and start the new one
-          this._promoteCurrent(snapshot);
-        }
-      })
+      this.directorService.currentSensory$.subscribe(curr => this.current = curr)
     );
-
     this.subs.add(
-      this.directorService.latestAiResponse$.subscribe(res => {
-        if (!res || !this.current) return;
-
-        // Attach response to current
-        this.current = { ...this.current, aiResponse: res };
-
-        // If something was queued while we were waiting, promote and start it now
-        if (this.pendingSnapshot) {
-          this._promoteCurrent(this.pendingSnapshot);
-          this.pendingSnapshot = null;
+      this.directorService.pendingSnapshot$.subscribe(pending => this.pendingSnapshot = pending)
+    );
+    this.subs.add(
+      this.directorService.sensoryHistory$.subscribe(hist => {
+        this.history = hist;
+        if (hist.length > this.lastHistoryLength) {
+          this.shouldScrollHistory = true;
         }
+        this.lastHistoryLength = hist.length;
       })
     );
   }
 
-  private _promoteCurrent(nextSnapshot: ContinuousContext): void {
-    if (this.current) {
-      this.history = [...this.history, this.current].slice(-MAX_HISTORY);
-      this.shouldScrollHistory = true;
-    }
-    this.current = { snapshot: nextSnapshot, aiResponse: null };
+  openDrawer(entry: HistoryEntry) {
+    this.selectedDrawerEntry = {
+      prompt: entry.snapshot.context_string,
+      reply: entry.aiResponse?.text === '<SILENCE>' 
+        ? 'Silent (decided not to respond)' 
+        : (entry.aiResponse?.text || 'No response recorded'),
+      is_censored: false
+    };
+    this.isDrawerOpen = true;
   }
 
   ngAfterViewChecked(): void {

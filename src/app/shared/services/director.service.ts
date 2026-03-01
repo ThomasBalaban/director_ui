@@ -16,9 +16,21 @@ import {
 } from '../interfaces/director.interfaces';
 
 const MAX_LOG = 50;
+const MAX_SENSORY_HISTORY = 30;
 
-function trimLog<T>(arr: T[]): T[] {
-  return arr.length > MAX_LOG ? arr.slice(arr.length - MAX_LOG) : arr;
+export interface ContinuousContext {
+  type: string;
+  context_string: string;
+  timestamp: string;
+}
+
+export interface HistoryEntry {
+  snapshot: ContinuousContext;
+  aiResponse: { text: string; timestamp: string } | null;
+}
+
+function trimLog<T>(arr: T[], limit: number = MAX_LOG): T[] {
+  return arr.length > limit ? arr.slice(arr.length - limit) : arr;
 }
 
 @Injectable({
@@ -41,13 +53,13 @@ export class DirectorService implements OnDestroy {
   private scoreHistorySubject     = new BehaviorSubject<ScoreEntry[]>([]);
   private pendingAiContextSubject = new BehaviorSubject<string | null>(null);
   private classifiedEventsSubject = new BehaviorSubject<ClassifiedEvent[]>([]);
-  private latestAiContextSubject  = new BehaviorSubject<string | null>(null);
 
-  private latestContextSubject = new BehaviorSubject<any>(null);
-  public latestAiContext$ = this.latestContextSubject.asObservable();
-
+  // Persistent Sensory Panel State
+  private sensoryHistorySubject  = new BehaviorSubject<HistoryEntry[]>([]);
+  private currentSensorySubject  = new BehaviorSubject<HistoryEntry | null>(null);
+  private pendingSnapshotSubject = new BehaviorSubject<ContinuousContext | null>(null);
+  private latestContextSubject   = new BehaviorSubject<any>(null);
   private latestAiResponseSubject = new BehaviorSubject<{text: string, timestamp: string} | null>(null);
-  public latestAiResponse$ = this.latestAiResponseSubject.asObservable();
 
   public directorState$    = this.directorStateSubject.asObservable();
   public visionLog$        = this.visionLogSubject.asObservable();
@@ -58,22 +70,20 @@ export class DirectorService implements OnDestroy {
   public scoreHistory$     = this.scoreHistorySubject.asObservable();
   public pendingAiContext$ = this.pendingAiContextSubject.asObservable();
 
+  // Sensory Panel Observables
+  public sensoryHistory$   = this.sensoryHistorySubject.asObservable();
+  public currentSensory$   = this.currentSensorySubject.asObservable();
+  public pendingSnapshot$  = this.pendingSnapshotSubject.asObservable();
+  public latestAiContext$  = this.latestContextSubject.asObservable();
+  public latestAiResponse$ = this.latestAiResponseSubject.asObservable();
+
   // Raw subject kept for any component that needs one-shot AI suggestion events
   private aiSuggestionSubject = new Subject<AiContextSuggestion>();
   public aiSuggestion$ = this.aiSuggestionSubject.asObservable();
 
   constructor() {
     this.socket = io('http://localhost:8002'); 
-
-    this.socket.on('continuous_context', (data: any) => {
-      this.latestContextSubject.next(data);
-    });
-
-    this.socket.on('ai_response', (data: any) => {
-      this.latestAiResponseSubject.next(data);
-    });
-
-    this.setupSocketListeners(); // ← this was missing
+    this.setupSocketListeners();
   }
 
   private setupSocketListeners(): void {
@@ -160,10 +170,48 @@ export class DirectorService implements OnDestroy {
       this.classifiedEventsSubject.next(history);
     });
 
-    // Readable AI context string from sensory_data
+    // Sensory Pipeline: Handle incoming contexts and push to history
     this.socket.on('continuous_context', (data: any) => {
-      console.log("Got continuous stream from Hub:", data); // Add this to check browser console!
-      this.latestAiContextSubject.next(data);
+      this.latestContextSubject.next(data);
+
+      let snapshot: ContinuousContext;
+      if (typeof data === 'string') {
+        snapshot = { type: 'continuous_context', context_string: data, timestamp: new Date().toISOString() };
+      } else if (data?.context_string) {
+        snapshot = data as ContinuousContext;
+      } else {
+        return;
+      }
+
+      const current = this.currentSensorySubject.value;
+      if (!current) {
+        this.currentSensorySubject.next({ snapshot, aiResponse: null });
+      } else if (!current.aiResponse) {
+        this.pendingSnapshotSubject.next(snapshot);
+      } else {
+        const history = trimLog([...this.sensoryHistorySubject.value, current], MAX_SENSORY_HISTORY);
+        this.sensoryHistorySubject.next(history);
+        this.currentSensorySubject.next({ snapshot, aiResponse: null });
+      }
+    });
+
+    // Sensory Pipeline: Match AI responses to the current evaluation
+    this.socket.on('ai_response', (data: any) => {
+      this.latestAiResponseSubject.next(data);
+
+      const current = this.currentSensorySubject.value;
+      if (!current) return;
+
+      const updatedCurrent = { ...current, aiResponse: data };
+      this.currentSensorySubject.next(updatedCurrent);
+
+      const pending = this.pendingSnapshotSubject.value;
+      if (pending) {
+        const history = trimLog([...this.sensoryHistorySubject.value, updatedCurrent], MAX_SENSORY_HISTORY);
+        this.sensoryHistorySubject.next(history);
+        this.currentSensorySubject.next({ snapshot: pending, aiResponse: null });
+        this.pendingSnapshotSubject.next(null);
+      }
     });
   }
 
