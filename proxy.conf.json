@@ -32,5 +32,10 @@
     "target": "http://localhost:8018",
     "secure": false,
     "pathRewrite": { "^/stream-audio": "" }
+  },
+  "/context-service": {
+    "target": "http://localhost:8020",
+    "secure": false,
+    "pathRewrite": { "^/context-service": "" }
   }
 }

@@ -162,6 +162,17 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "health_url":   "http://localhost:8008/health",
         "managed":      True,
     },
+    "sensory_data": {
+        "label":        "Sensory Data Aggregator",
+        "description":  "Fuses vision/audio/mic → classifies events via Gemini Flash → emits structured context",
+        "cmd":          [conda_python("nami"),
+                         os.path.join(PARENT_DIR, "sensory_data", "main.py")],
+        "cwd":          os.path.join(PARENT_DIR, "sensory_data"),
+        "port":         8020,
+        "health_check": "http",
+        "health_url":   "http://localhost:8020/health",
+        "managed":      True,
+    },
 }
 
 # Boot-time health check retry counts per service
@@ -176,4 +187,5 @@ BOOT_RETRIES: Dict[str, int] = {
     "twitch_service":  30,
     "user_profile_service": 30,
     "memory_service": 40,
+    "sensory_data": 30,
 }

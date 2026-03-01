@@ -167,3 +167,24 @@ export interface ScoreEntry {
   text: string;
   timestamp?: number;
 }
+
+export interface SenseContextLine {
+  text: string;
+  iso_ts: string;
+  source: string;
+}
+
+export interface ClassifiedEvent {
+  event: string;
+  confidence: number;
+  summary: string;
+  timestamp: string;
+  context: {
+    vision: SenseContextLine[];
+    audio: SenseContextLine[];
+    mic: SenseContextLine[];
+  };
+  player_speaking: boolean;
+  has_vision: boolean;
+  has_audio: boolean;
+}

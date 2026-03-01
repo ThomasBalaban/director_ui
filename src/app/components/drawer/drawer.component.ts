@@ -1,15 +1,13 @@
+/* Currently working as left navigation, will someday include drawers */
+
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { ThreadStatsComponent } from '../thread-stats/thread-stats.component';
-import { PromptDebugComponent } from '../prompt-debug/prompt-debug.component';
-
-type DrawerPanel = 'thread-stats' | 'prompt-debug' | null;
 
 @Component({
-  selector: 'app-debug-drawer',
+  selector: 'app-drawer',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, ThreadStatsComponent, PromptDebugComponent],
+  imports: [CommonModule, RouterLink, RouterLinkActive],
   template: `
     <!-- Left nav bar -->
     <div class="debug-nav">
@@ -45,41 +43,7 @@ type DrawerPanel = 'thread-stats' | 'prompt-debug' | null;
       </a>
       <div class="nav-divider"></div>
 
-      <!-- Panel toggles -->
-      <button
-        class="nav-btn"
-        [class.active]="activePanel() === 'thread-stats'"
-        (click)="toggle('thread-stats')"
-        title="Thread Stats">
-        🧵
-      </button>
-      <button
-        class="nav-btn"
-        [class.active]="activePanel() === 'prompt-debug'"
-        (click)="toggle('prompt-debug')"
-        title="Prompt Debug">
-        🔍
-      </button>
     </div>
-
-    <!-- Drawer overlay -->
-    @if (activePanel()) {
-      <div class="drawer-overlay" (click)="close()"></div>
-      <div class="drawer-panel">
-        <div class="drawer-header">
-          <span class="drawer-title">{{ drawerTitle() }}</span>
-          <button class="drawer-close" (click)="close()">✕</button>
-        </div>
-        <div class="drawer-content">
-          @if (activePanel() === 'thread-stats') {
-            <app-thread-stats />
-          }
-          @if (activePanel() === 'prompt-debug') {
-            <app-prompt-debug />
-          }
-        </div>
-      </div>
-    }
   `,
   styles: [`
     :host {
@@ -212,22 +176,6 @@ type DrawerPanel = 'thread-stats' | 'prompt-debug' | null;
     }
   `]
 })
-export class DebugDrawerComponent {
-  activePanel = signal<DrawerPanel>(null);
+export class DrawerComponent {
 
-  toggle(panel: DrawerPanel) {
-    this.activePanel.update(current => current === panel ? null : panel);
-  }
-
-  close() {
-    this.activePanel.set(null);
-  }
-
-  drawerTitle(): string {
-    switch (this.activePanel()) {
-      case 'thread-stats': return '🧵 Thread Stats';
-      case 'prompt-debug': return '🔍 Prompt Debug';
-      default: return '';
-    }
-  }
 }

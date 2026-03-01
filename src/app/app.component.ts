@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { DebugDrawerComponent } from './components/debug-drawer/debug-drawer.component';
+import { DrawerComponent } from "./components/drawer/drawer.component";
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, DebugDrawerComponent],
+  imports: [RouterOutlet, DrawerComponent],
   template: `
-    <app-debug-drawer />
+    <app-drawer />
     <router-outlet></router-outlet>
   `,
   styles: [`

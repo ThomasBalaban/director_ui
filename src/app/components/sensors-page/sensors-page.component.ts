@@ -5,6 +5,22 @@ import { Subscription } from 'rxjs';
 import { DirectorService } from '../../shared/services/director.service';
 import { AudioLogEntry } from '../../shared/interfaces/director.interfaces';
 
+interface TimestampedEntry {
+  text: string;
+  ts: number;       // unix ms — when this component received it
+  isPartial?: boolean;
+  sessionId?: string;
+}
+
+function fmtTime(ts: number): string {
+  const d = new Date(ts);
+  const hh = d.getHours().toString().padStart(2, '0');
+  const mm = d.getMinutes().toString().padStart(2, '0');
+  const ss = d.getSeconds().toString().padStart(2, '0');
+  const ms = d.getMilliseconds().toString().padStart(3, '0');
+  return `${hh}:${mm}:${ss}.${ms}`;
+}
+
 @Component({
   selector: 'app-sensors-page',
   standalone: true,
@@ -47,8 +63,8 @@ import { AudioLogEntry } from '../../shared/interfaces/director.interfaces';
             <div *ngFor="let entry of visionLog; let i = index"
                  class="feed-entry feed-entry--vision"
                  [class.feed-entry--latest]="i === visionLog.length - 1">
-              <span class="entry-index">{{ i + 1 }}</span>
-              <span class="entry-text">{{ entry }}</span>
+              <span class="entry-ts">{{ fmt(entry.ts) }}</span>
+              <span class="entry-text">{{ entry.text }}</span>
             </div>
             <div *ngIf="!visionLog.length" class="feed-empty">
               <span class="empty-icon">👁️</span>
@@ -73,8 +89,8 @@ import { AudioLogEntry } from '../../shared/interfaces/director.interfaces';
             <div *ngFor="let entry of spokenLog; let i = index"
                  class="feed-entry feed-entry--mic"
                  [class.feed-entry--latest]="i === spokenLog.length - 1">
-              <span class="entry-index">{{ i + 1 }}</span>
-              <span class="entry-text">{{ entry }}</span>
+              <span class="entry-ts">{{ fmt(entry.ts) }}</span>
+              <span class="entry-text">{{ entry.text }}</span>
             </div>
             <div *ngIf="!spokenLog.length" class="feed-empty">
               <span class="empty-icon">🎤</span>
@@ -100,7 +116,7 @@ import { AudioLogEntry } from '../../shared/interfaces/director.interfaces';
                  class="feed-entry feed-entry--audio"
                  [class.feed-entry--partial]="entry.isPartial"
                  [class.feed-entry--latest]="i === audioLog.length - 1 && !entry.isPartial">
-              <span class="entry-index">{{ i + 1 }}</span>
+              <span class="entry-ts" [class.entry-ts--partial]="entry.isPartial">{{ fmt(entry.ts) }}</span>
               <span class="partial-tag" *ngIf="entry.isPartial">~</span>
               <span class="entry-text">{{ entry.text }}</span>
             </div>
@@ -301,7 +317,7 @@ import { AudioLogEntry } from '../../shared/interfaces/director.interfaces';
       display: flex;
       align-items: flex-start;
       gap: 8px;
-      padding: 0.5rem 0.75rem;
+      padding: 0.4rem 0.75rem;
       border-radius: var(--radius-sm);
       font-size: 0.78rem;
       line-height: 1.5;
@@ -351,15 +367,24 @@ import { AudioLogEntry } from '../../shared/interfaces/director.interfaces';
       50% { opacity: 0.9; }
     }
 
-    .entry-index {
+    /* ── Timestamp ── */
+    .entry-ts {
       font-size: 0.62rem;
       font-family: monospace;
       color: var(--text-dimmer);
-      min-width: 1.5rem;
+      margin-right: 1rem;
       flex-shrink: 0;
-      text-align: right;
-      margin-top: 2px;
+      padding-top: 2px;
+      white-space: nowrap;
     }
+
+    .entry-ts--partial {
+      color: var(--accent-yellow);
+      opacity: 0.7;
+    }
+
+    /* Latest entry timestamps get slightly brighter */
+    .feed-entry--latest .entry-ts { color: var(--text-dim); }
 
     .partial-tag {
       font-size: 0.7rem;
@@ -391,14 +416,18 @@ import { AudioLogEntry } from '../../shared/interfaces/director.interfaces';
   `]
 })
 export class SensorsPageComponent implements OnInit, OnDestroy, AfterViewChecked {
-  visionLog: string[] = [];
-  spokenLog: string[] = [];
-  audioLog: AudioLogEntry[] = [];
+  visionLog: TimestampedEntry[] = [];
+  spokenLog: TimestampedEntry[] = [];
+  audioLog:  TimestampedEntry[] = [];
 
   private subs = new Subscription();
   private shouldScrollVision = false;
-  private shouldScrollMic = false;
-  private shouldScrollAudio = false;
+  private shouldScrollMic    = false;
+  private shouldScrollAudio  = false;
+
+  // Track previous raw string counts so we only timestamp genuinely new entries
+  private prevVisionCount = 0;
+  private prevSpokenCount = 0;
 
   @ViewChildren('visionScroll') visionScrollRef!: QueryList<ElementRef>;
   @ViewChildren('micScroll')    micScrollRef!: QueryList<ElementRef>;
@@ -410,17 +439,49 @@ export class SensorsPageComponent implements OnInit, OnDestroy, AfterViewChecked
     return this.visionLog.length + this.spokenLog.length + this.audioLog.length;
   }
 
+  fmt = fmtTime;
+
   ngOnInit(): void {
     this.subs.add(this.directorService.visionLog$.subscribe(log => {
-      this.visionLog = log;
+      if (log.length > this.prevVisionCount) {
+        // Stamp only the new tail entries (preserves existing timestamps on scroll)
+        const newEntries = log.slice(this.prevVisionCount).map(text => ({
+          text,
+          ts: Date.now(),
+        }));
+        this.visionLog = [...this.visionLog, ...newEntries];
+        this.prevVisionCount = log.length;
+      } else if (log.length < this.prevVisionCount) {
+        // Log was trimmed / cleared
+        this.visionLog = log.map(text => ({ text, ts: Date.now() }));
+        this.prevVisionCount = log.length;
+      }
       this.shouldScrollVision = true;
     }));
+
     this.subs.add(this.directorService.spokenLog$.subscribe(log => {
-      this.spokenLog = log;
+      if (log.length > this.prevSpokenCount) {
+        const newEntries = log.slice(this.prevSpokenCount).map(text => ({
+          text,
+          ts: Date.now(),
+        }));
+        this.spokenLog = [...this.spokenLog, ...newEntries];
+        this.prevSpokenCount = log.length;
+      } else if (log.length < this.prevSpokenCount) {
+        this.spokenLog = log.map(text => ({ text, ts: Date.now() }));
+        this.prevSpokenCount = log.length;
+      }
       this.shouldScrollMic = true;
     }));
-    this.subs.add(this.directorService.audioLog$.subscribe(log => {
-      this.audioLog = log;
+
+    this.subs.add(this.directorService.audioLog$.subscribe((log: AudioLogEntry[]) => {
+      // AudioLogEntry already has an optional timestamp field from the service
+      this.audioLog = log.map(entry => ({
+        text:      entry.text,
+        ts:        entry.timestamp ?? Date.now(),
+        isPartial: entry.isPartial,
+        sessionId: entry.sessionId,
+      }));
       this.shouldScrollAudio = true;
     }));
   }

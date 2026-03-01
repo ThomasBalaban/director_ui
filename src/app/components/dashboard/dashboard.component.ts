@@ -10,7 +10,7 @@ import { HeaderComponent } from '../header/header.component';
 import { DirectivesPanelComponent } from '../directives-panel/directives-panel.component';
 import { SummaryPanelComponent } from '../summary-panel/summary-panel.component';
 import { InterestGraphComponent } from '../interest-graph/interest-graph.component';
-import { SensorsPageComponent } from '../sensors-page/sensors-page.component'
+import { SensoryPanelComponent } from '../sensory-panel/sensory-panel.component';  // ← classified output
 import { ChatPanelComponent } from '../chat-panel/chat-panel.component';
 import { MetricsPanelComponent } from '../metrics-panel/metrics-panel.component';
 import { MemoryPanelComponent } from '../memory-panel/memory-panel.component';
@@ -27,7 +27,7 @@ import { ContextDrawerComponent } from '../context-drawer/context-drawer.compone
     DirectivesPanelComponent,
     SummaryPanelComponent,
     InterestGraphComponent,
-    SensorsPageComponent,
+    SensoryPanelComponent,   // ← classified output, NOT SensorsPageComponent
     ChatPanelComponent,
     MetricsPanelComponent,
     MemoryPanelComponent,

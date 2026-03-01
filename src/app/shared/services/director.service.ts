@@ -11,7 +11,8 @@ import {
   Streamer,
   ChatMessage,
   AudioLogEntry,
-  ScoreEntry
+  ScoreEntry,
+  ClassifiedEvent
 } from '../interfaces/director.interfaces';
 
 const MAX_LOG = 50;
@@ -39,6 +40,14 @@ export class DirectorService implements OnDestroy {
   private namiRepliesSubject      = new BehaviorSubject<BotReply[]>([]);
   private scoreHistorySubject     = new BehaviorSubject<ScoreEntry[]>([]);
   private pendingAiContextSubject = new BehaviorSubject<string | null>(null);
+  private classifiedEventsSubject = new BehaviorSubject<ClassifiedEvent[]>([]);
+  private latestAiContextSubject  = new BehaviorSubject<string | null>(null);
+
+  private latestContextSubject = new BehaviorSubject<any>(null);
+  public latestAiContext$ = this.latestContextSubject.asObservable();
+
+  private latestAiResponseSubject = new BehaviorSubject<{text: string, timestamp: string} | null>(null);
+  public latestAiResponse$ = this.latestAiResponseSubject.asObservable();
 
   public directorState$    = this.directorStateSubject.asObservable();
   public visionLog$        = this.visionLogSubject.asObservable();
@@ -54,15 +63,16 @@ export class DirectorService implements OnDestroy {
   public aiSuggestion$ = this.aiSuggestionSubject.asObservable();
 
   constructor() {
-    this.socket = io(environment.socketUrl || 'http://localhost:8002', {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000
+    this.socket = io('http://localhost:8002'); 
+
+    this.socket.on('continuous_context', (data: any) => {
+      this.latestContextSubject.next(data);
     });
 
-    this.setupSocketListeners();
+    // Listen for Ollama's thoughts
+    this.socket.on('ai_response', (data: any) => {
+      this.latestAiResponseSubject.next(data);
+    });
   }
 
   private setupSocketListeners(): void {
@@ -141,6 +151,18 @@ export class DirectorService implements OnDestroy {
       if (data.context) {
         this.pendingAiContextSubject.next(data.context);
       }
+    });
+
+    this.socket.on('classified_event', (data: ClassifiedEvent) => {
+      const history = [...this.classifiedEventsSubject.value, data];
+      if (history.length > MAX_LOG) history.shift();
+      this.classifiedEventsSubject.next(history);
+    });
+
+    // Readable AI context string from sensory_data
+    this.socket.on('continuous_context', (data: any) => {
+      console.log("Got continuous stream from Hub:", data); // Add this to check browser console!
+      this.latestAiContextSubject.next(data);
     });
   }
 
