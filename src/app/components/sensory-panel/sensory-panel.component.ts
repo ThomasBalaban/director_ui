@@ -24,7 +24,6 @@ import { ContextDrawerComponent } from '../context-drawer/context-drawer.compone
           </span>
         </div>
         <div class="header-right">
-          <span class="history-count" *ngIf="history.length > 0">{{ history.length }} past</span>
           <a routerLink="/sensors" class="raw-feeds-link">Raw feeds →</a>
         </div>
       </div>
@@ -83,6 +82,9 @@ import { ContextDrawerComponent } from '../context-drawer/context-drawer.compone
               class="history-entry"
               (click)="openDrawer(entry)"
             >
+              <div class="history-entry-body">
+                <pre class="history-text">{{ entry.snapshot.context_string }}</pre>
+              </div>
               <div class="history-entry-bar">
                 <span class="history-entry-num">#{{ history.length - i }}</span>
                 <span class="history-entry-time">{{ formatTime(entry.snapshot.timestamp) }}</span>
@@ -99,9 +101,7 @@ import { ContextDrawerComponent } from '../context-drawer/context-drawer.compone
                 </span>
               </div>
 
-              <div class="history-entry-body">
-                <pre class="history-text">{{ entry.snapshot.context_string }}</pre>
-              </div>
+              
 
             </div>
           </div>
@@ -308,8 +308,6 @@ import { ContextDrawerComponent } from '../context-drawer/context-drawer.compone
     .history-pane {
       display: flex;
       flex-direction: column;
-      border: 1px solid var(--border-faint);
-      border-radius: var(--radius-md);
       background: var(--surface-1);
       flex: 1;
       min-height: 0;
@@ -340,14 +338,16 @@ import { ContextDrawerComponent } from '../context-drawer/context-drawer.compone
       overflow-y: auto;
       display: flex;
       flex-direction: column;
+      background: #1e1e1e;
     }
 
     /* ── History entries ── */
     .history-entry {
-      border-bottom: 1px solid var(--border-faint);
+      border: 1px solid var(--border-faint);
       flex-shrink: 0;
       cursor: pointer;
       transition: background-color var(--transition-fast);
+      margin-bottom: 1rem;
 
       &:last-child { border-bottom: none; }
 
@@ -389,7 +389,7 @@ import { ContextDrawerComponent } from '../context-drawer/context-drawer.compone
 
     .history-ai-text {
       font-size: 0.68rem;
-      color: #4ade80;
+      color: #63e2b7;
       flex: 1;
       white-space: normal;
       line-height: 1.4;
