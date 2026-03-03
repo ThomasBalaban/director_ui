@@ -81,7 +81,7 @@ export class DirectorService implements OnDestroy {
 
   constructor() {
     this.socket = io(environment.socketUrl, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
