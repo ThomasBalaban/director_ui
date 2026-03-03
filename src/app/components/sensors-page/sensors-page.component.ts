@@ -26,12 +26,11 @@ function fmtTime(ts: number): string {
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="sensors-page">
-
-      <div class="sensors-header">
-        <div class="sensors-header-left">
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
           <a routerLink="/" class="back-btn">← Dashboard</a>
-          <h1 class="sensors-title">
+          <h1 class="page-title">
             <span class="title-icon">🔭</span>
             Raw Sensor Feeds
           </h1>
@@ -40,93 +39,93 @@ function fmtTime(ts: number): string {
             LIVE
           </span>
         </div>
-        <div class="sensors-header-right">
+        <div class="page-header-right">
           <span class="feed-count">{{ totalEntries }} entries captured</span>
         </div>
       </div>
 
-      <div class="feeds-grid">
-
-        <!-- Vision Feed -->
-        <div class="feed-card feed-vision">
-          <div class="feed-header">
-            <div class="feed-header-left">
-              <span class="feed-icon">👁️</span>
-              <div>
-                <div class="feed-title">Vision</div>
-                <div class="feed-meta">Gemini 2.5 Flash · 12s window</div>
+      <div class="page-content">
+          <div class='page-grid page-grid-3'>
+          <!-- Vision Feed -->
+          <div class="feed-card feed-vision">
+            <div class="feed-header">
+              <div class="feed-header-left">
+                <span class="feed-icon">👁️</span>
+                <div>
+                  <div class="feed-title">Vision</div>
+                  <div class="feed-meta">Gemini 2.5 Flash · 12s window</div>
+                </div>
+              </div>
+              <span class="feed-count-badge">{{ visionLog.length }}</span>
+            </div>
+            <div class="feed-body" #visionScroll>
+              <div *ngFor="let entry of visionLog; let i = index"
+                  class="feed-entry feed-entry--vision"
+                  [class.feed-entry--latest]="i === visionLog.length - 1">
+                <span class="entry-ts">{{ fmt(entry.ts) }}</span>
+                <span class="entry-text">{{ entry.text }}</span>
+              </div>
+              <div *ngIf="!visionLog.length" class="feed-empty">
+                <span class="empty-icon">👁️</span>
+                Waiting for vision data...
               </div>
             </div>
-            <span class="feed-count-badge">{{ visionLog.length }}</span>
           </div>
-          <div class="feed-body" #visionScroll>
-            <div *ngFor="let entry of visionLog; let i = index"
-                 class="feed-entry feed-entry--vision"
-                 [class.feed-entry--latest]="i === visionLog.length - 1">
-              <span class="entry-ts">{{ fmt(entry.ts) }}</span>
-              <span class="entry-text">{{ entry.text }}</span>
+
+          <!-- Microphone Feed -->
+          <div class="feed-card feed-mic">
+            <div class="feed-header">
+              <div class="feed-header-left">
+                <span class="feed-icon">🎤</span>
+                <div>
+                  <div class="feed-title">Microphone</div>
+                  <div class="feed-meta">Parakeet MLX · 30s window</div>
+                </div>
+              </div>
+              <span class="feed-count-badge">{{ spokenLog.length }}</span>
             </div>
-            <div *ngIf="!visionLog.length" class="feed-empty">
-              <span class="empty-icon">👁️</span>
-              Waiting for vision data...
+            <div class="feed-body" #micScroll>
+              <div *ngFor="let entry of spokenLog; let i = index"
+                  class="feed-entry feed-entry--mic"
+                  [class.feed-entry--latest]="i === spokenLog.length - 1">
+                <span class="entry-ts">{{ fmt(entry.ts) }}</span>
+                <span class="entry-text">{{ entry.text }}</span>
+              </div>
+              <div *ngIf="!spokenLog.length" class="feed-empty">
+                <span class="empty-icon">🎤</span>
+                Waiting for mic audio...
+              </div>
+            </div>
+          </div>
+
+          <!-- Desktop Audio Feed -->
+          <div class="feed-card feed-audio">
+            <div class="feed-header">
+              <div class="feed-header-left">
+                <span class="feed-icon">🖥️</span>
+                <div>
+                  <div class="feed-title">Desktop Audio</div>
+                  <div class="feed-meta">OpenAI Realtime + GPT-4o · 12s window</div>
+                </div>
+              </div>
+              <span class="feed-count-badge">{{ audioLog.length }}</span>
+            </div>
+            <div class="feed-body" #audioScroll>
+              <div *ngFor="let entry of audioLog; let i = index"
+                  class="feed-entry feed-entry--audio"
+                  [class.feed-entry--partial]="entry.isPartial"
+                  [class.feed-entry--latest]="i === audioLog.length - 1 && !entry.isPartial">
+                <span class="entry-ts" [class.entry-ts--partial]="entry.isPartial">{{ fmt(entry.ts) }}</span>
+                <span class="partial-tag" *ngIf="entry.isPartial">~</span>
+                <span class="entry-text">{{ entry.text }}</span>
+              </div>
+              <div *ngIf="!audioLog.length" class="feed-empty">
+                <span class="empty-icon">🖥️</span>
+                Waiting for desktop audio...
+              </div>
             </div>
           </div>
         </div>
-
-        <!-- Microphone Feed -->
-        <div class="feed-card feed-mic">
-          <div class="feed-header">
-            <div class="feed-header-left">
-              <span class="feed-icon">🎤</span>
-              <div>
-                <div class="feed-title">Microphone</div>
-                <div class="feed-meta">Parakeet MLX · 30s window</div>
-              </div>
-            </div>
-            <span class="feed-count-badge">{{ spokenLog.length }}</span>
-          </div>
-          <div class="feed-body" #micScroll>
-            <div *ngFor="let entry of spokenLog; let i = index"
-                 class="feed-entry feed-entry--mic"
-                 [class.feed-entry--latest]="i === spokenLog.length - 1">
-              <span class="entry-ts">{{ fmt(entry.ts) }}</span>
-              <span class="entry-text">{{ entry.text }}</span>
-            </div>
-            <div *ngIf="!spokenLog.length" class="feed-empty">
-              <span class="empty-icon">🎤</span>
-              Waiting for mic audio...
-            </div>
-          </div>
-        </div>
-
-        <!-- Desktop Audio Feed -->
-        <div class="feed-card feed-audio">
-          <div class="feed-header">
-            <div class="feed-header-left">
-              <span class="feed-icon">🖥️</span>
-              <div>
-                <div class="feed-title">Desktop Audio</div>
-                <div class="feed-meta">OpenAI Realtime + GPT-4o · 12s window</div>
-              </div>
-            </div>
-            <span class="feed-count-badge">{{ audioLog.length }}</span>
-          </div>
-          <div class="feed-body" #audioScroll>
-            <div *ngFor="let entry of audioLog; let i = index"
-                 class="feed-entry feed-entry--audio"
-                 [class.feed-entry--partial]="entry.isPartial"
-                 [class.feed-entry--latest]="i === audioLog.length - 1 && !entry.isPartial">
-              <span class="entry-ts" [class.entry-ts--partial]="entry.isPartial">{{ fmt(entry.ts) }}</span>
-              <span class="partial-tag" *ngIf="entry.isPartial">~</span>
-              <span class="entry-text">{{ entry.text }}</span>
-            </div>
-            <div *ngIf="!audioLog.length" class="feed-empty">
-              <span class="empty-icon">🖥️</span>
-              Waiting for desktop audio...
-            </div>
-          </div>
-        </div>
-
       </div>
     </div>
   `,

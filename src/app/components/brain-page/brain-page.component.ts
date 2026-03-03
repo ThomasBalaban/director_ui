@@ -19,12 +19,12 @@ import { UserPanelComponent } from '../user-panel/user-panel.component';
     UserPanelComponent,
   ],
   template: `
-    <div class="brain-page">
+    <div class="page">
 
-      <div class="brain-header">
-        <div class="brain-header-left">
+      <div class="page-header">
+        <div class="page-header-left">
           <a routerLink="/" class="back-btn">← Dashboard</a>
-          <h1 class="brain-title">
+          <h1 class="page-title">
             <span class="title-icon">🧠</span>
             Brain
           </h1>
@@ -35,32 +35,32 @@ import { UserPanelComponent } from '../user-panel/user-panel.component';
         </div>
       </div>
 
-      <div class="brain-grid">
+      <div class="page-content">
+        <div class="page-grid page-grid-brain">
+          <!-- Left column: Metrics -->
+          <div class="page-col">
+            <app-metrics-panel
+              [adaptive]="directorState?.adaptive || null"
+              [flow]="directorState?.flow || 'Unknown'"
+              [intent]="directorState?.intent || 'Unknown'"
+              [prediction]="directorState?.prediction || 'Observing flow...'"
+            ></app-metrics-panel>
+          </div>
 
-        <!-- Left column: Metrics -->
-        <div class="brain-col">
-          <app-metrics-panel
-            [adaptive]="directorState?.adaptive || null"
-            [flow]="directorState?.flow || 'Unknown'"
-            [intent]="directorState?.intent || 'Unknown'"
-            [prediction]="directorState?.prediction || 'Observing flow...'"
-          ></app-metrics-panel>
+          <!-- Middle column: Interest Graph -->
+          <div class="page-col">
+            <app-interest-graph
+              [scoreHistory]="scoreHistory"
+            ></app-interest-graph>
+          </div>
+
+          <!-- Right column: Active User + Memories -->
+          <div class="page-col">
+            <app-user-panel
+              [user]="directorState?.active_user || null"
+            ></app-user-panel>
+          </div>
         </div>
-
-        <!-- Middle column: Interest Graph -->
-        <div class="brain-col">
-          <app-interest-graph
-            [scoreHistory]="scoreHistory"
-          ></app-interest-graph>
-        </div>
-
-        <!-- Right column: Active User + Memories -->
-        <div class="brain-col">
-          <app-user-panel
-            [user]="directorState?.active_user || null"
-          ></app-user-panel>
-        </div>
-
       </div>
     </div>
   `,
