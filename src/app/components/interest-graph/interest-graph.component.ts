@@ -19,44 +19,6 @@ Chart.register(...registerables);
       </div>
     </div>
   `,
-  styles: [`
-    :host {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
-    }
-
-    .graph-content {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .chart-container {
-      flex: 1;
-      position: relative;
-      min-height: 120px;
-
-      canvas {
-        position: absolute;
-        top: 0; left: 0;
-        width: 100%;
-        height: 100%;
-      }
-    }
-
-    .score-log {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      flex: none;
-      height: 8rem;
-      overflow-y: auto;
-      padding-top: 0.5rem;
-      border-top: 1px solid var(--border);
-      margin-top: 0.5rem;
-      white-space: pre-wrap;
-    }
-  `]
 })
 export class InterestGraphComponent implements AfterViewInit, OnChanges {
   @Input() scoreHistory: { score: number; source: string; text: string }[] = [];

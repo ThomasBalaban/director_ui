@@ -28,40 +28,6 @@ import { CommonModule } from '@angular/common';
       </div>
     </div>
   `,
-  styles: [`
-    .log-panel { display: flex; flex-direction: column; border-top: 1px solid var(--border-dim); }
-
-    .log-toolbar {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 0.5rem 1rem; background: var(--surface-1);
-    }
-
-    .log-title {
-      font-size: 0.7rem; text-transform: uppercase;
-      letter-spacing: 0.08em; color: var(--text-dimmer); font-weight: 700;
-    }
-
-    .log-refresh {
-      background: transparent; border: none; color: var(--text-dimmer);
-      cursor: pointer; font-size: 0.75rem; transition: color var(--transition-fast);
-      &:hover { color: var(--text-muted); }
-    }
-
-    .log-body {
-      padding: 0.75rem 1rem; font-family: 'Courier New', monospace;
-      font-size: 0.72rem; line-height: 1.6; background: var(--surface-0);
-      max-height: 300px; overflow-y: auto; color: var(--text-muted);
-    }
-
-    .log-empty { color: #374151; font-style: italic; }
-
-    .toolbar-actions { display: flex; gap: 8px; align-items: center; }
-    .log-clear {
-      background: transparent; border: none; color: var(--accent-red-light);
-      cursor: pointer; font-size: 0.75rem; opacity: 0.6; transition: opacity var(--transition-fast);
-      &:hover { opacity: 1; }
-    }
-  `]
 })
 export class LogPanelComponent {
   @Input() title = '';

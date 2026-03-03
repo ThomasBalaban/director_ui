@@ -98,60 +98,6 @@ import { AdaptiveState } from '../../shared/interfaces/director.interfaces';
       </div>
     </div>
   `,
-  styles: [`
-    .metrics-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .state-label {
-      font-size: 0.75rem;
-      padding: 0.25rem 0.5rem;
-      border-radius: var(--radius-sm);
-      background: #374151;
-      color: #d1d5db;
-
-      &.chaos { background: #7f1d1d; color: var(--accent-red-pale); }
-      &.dead  { background: #1e3a8a; color: #bfdbfe; }
-    }
-
-    .metric { margin-bottom: 1rem; }
-
-    .bar-bg--md { height: 0.5rem; background: #1f2937; }
-
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-    }
-
-    .dynamics-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
-
-    .sub-heading {
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--text-white);
-      margin: 0 0 0.5rem;
-    }
-
-    .value {
-      font-size: 0.875rem;
-      font-weight: 500;
-    }
-
-    .prediction-text {
-      font-size: 0.875rem;
-      color: var(--nami-teal);
-      font-style: italic;
-      line-height: 1.5;
-      margin: 0;
-    }
-  `]
 })
 export class MetricsPanelComponent {
   @Input() adaptive: AdaptiveState | null = null;

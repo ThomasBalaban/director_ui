@@ -1,0 +1,17 @@
+.summary-text {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-white);
+  line-height: 1.5;
+}
+
+.raw-context {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 1rem;
+  border-top: 1px dashed var(--border);
+  padding-top: 0.5rem;
+  white-space: pre-wrap;
+  max-height: 150px;
+  overflow-y: auto;
+}

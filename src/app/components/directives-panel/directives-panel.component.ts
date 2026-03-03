@@ -34,40 +34,6 @@ import { Directive } from '../../shared/interfaces/director.interfaces';
       </div>
     </div>
   `,
-  styles: [`
-    .directive-panel {
-      background: linear-gradient(to bottom, var(--surface-4), #202020);
-      border-color: rgba(88, 28, 135, 0.5);
-
-      .panel-title {
-        color: var(--accent-purple-pale);
-        border-bottom-color: rgba(88, 28, 135, 0.3);
-      }
-    }
-
-    .field { margin-bottom: 0.75rem; }
-
-    .objective {
-      font-size: 1.125rem;
-      font-weight: bold;
-      color: var(--text-white);
-      line-height: 1.25;
-    }
-
-    .tone   { font-size: 0.875rem; color: var(--accent-purple-pale); }
-    .action { font-size: 0.875rem; color: #d1d5db; font-style: italic; }
-
-    .constraints-box {
-      padding: 0.5rem;
-      background: rgba(127, 29, 29, 0.2);
-      border: 1px solid rgba(127, 29, 29, 0.5);
-      border-radius: var(--radius-sm);
-      margin-top: 0.5rem;
-    }
-
-    .constraints-label { color: var(--accent-red-light); }
-    .constraints-text  { font-size: 0.75rem; color: var(--accent-red-pale); }
-  `]
 })
 export class DirectivesPanelComponent {
   @Input() directive: Directive | null = null;

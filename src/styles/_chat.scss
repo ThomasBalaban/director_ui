@@ -1,0 +1,44 @@
+app-chat-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+.username      { color: var(--nami-purple); font-weight: 600; }
+.username.nami { color: var(--nami-teal); }
+
+.mention-bg {
+  background: rgba(169, 112, 255, 0.1);
+  border-left: 3px solid var(--nami-purple);
+  border-radius: 4px;
+}
+
+.nami-msg { background: rgba(99, 226, 183, 0.05); }
+
+.nami-reply {
+  color: var(--nami-teal);
+  cursor: pointer;
+  position: relative;
+  &:hover { background: rgba(99, 226, 183, 0.1); }
+  &.censored { background: rgba(239, 68, 68, 0.2); border-left: 3px solid var(--accent-red); }
+}
+
+.censored-indicator {
+  color: var(--accent-red);
+  font-weight: 600;
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
+
+.context-hint {
+  opacity: 0;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-left: 0.5rem;
+  transition: opacity var(--transition-normal);
+}
+.nami-reply:hover .context-hint { opacity: 1; }
+
+.highlight-word {
+  color: #d8b4fe;
+  font-weight: 600;
+  background: rgba(169, 112, 255, 0.2);
+  padding: 1px 4px;
+  border-radius: 4px;
+}

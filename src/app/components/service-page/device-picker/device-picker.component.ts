@@ -41,59 +41,6 @@ import { AudioDevice } from '../../../shared/interfaces/services.interface';
       }
     </div>
   `,
-  styles: [`
-    .device-picker {
-      padding: 0.75rem 1.25rem;
-      background: rgba(59,130,246,0.05);
-      border-bottom: 1px solid rgba(59,130,246,0.15);
-    }
-
-    .device-picker-header {
-      display: flex; align-items: center; gap: 0.75rem; 
-    }
-
-    /* Add margin to bottom only when expanded */
-    .device-picker:has(.device-list) .device-picker-header {
-        margin-bottom: 0.5rem;
-    }
-
-    .device-picker-label {
-      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.06em; color: var(--accent-blue-light);
-    }
-
-    .device-loading { font-size: 0.7rem; color: var(--text-dimmer); font-style: italic; }
-
-    .device-list {
-      display: flex; flex-direction: column; gap: 3px; max-height: 200px; overflow-y: auto;
-    }
-
-    .device-btn {
-      display: flex; align-items: center; gap: 8px; width: 100%;
-      background: transparent; border: 1px solid transparent;
-      border-radius: var(--radius-sm); padding: 5px 8px;
-      cursor: pointer; text-align: left; color: var(--text-muted); font-size: 0.8rem;
-      transition: background var(--transition-fast), border-color var(--transition-fast);
-
-      &:hover:not(:disabled) {
-        background: rgba(59,130,246,0.1);
-        border-color: rgba(59,130,246,0.3);
-        color: white;
-      }
-      &:disabled { opacity: 0.5; cursor: not-allowed; }
-    }
-
-    .device-btn.device-active {
-      background: rgba(59,130,246,0.15);
-      border-color: rgba(59,130,246,0.4);
-      color: var(--accent-blue-light);
-    }
-
-    .device-check { width: 14px; font-size: 0.75rem; color: var(--accent-blue-light); flex-shrink: 0; }
-    .device-name  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .device-meta  { font-size: 0.7rem; color: var(--text-dimmer); flex-shrink: 0; }
-    .device-empty { font-size: 0.75rem; color: var(--text-dimmer); font-style: italic; padding: 4px 0; }
-  `]
 })
 export class DevicePickerComponent {
   @Input() label = '🔊 Output Device';

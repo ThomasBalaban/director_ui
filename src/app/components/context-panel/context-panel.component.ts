@@ -29,40 +29,6 @@ import { CommonModule } from '@angular/common';
       </div>
     </div>
   `,
-  styles: [`
-    :host {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
-    }
-
-    .log-item {
-      font-size: 0.75rem;
-      color: #d1d5db;
-      margin-bottom: 0.5rem;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
-
-    .audio-item {
-      background: rgba(169, 112, 255, 0.15);
-      border-left: 3px solid var(--nami-purple);
-      padding: 0.25rem 0.5rem;
-      border-radius: var(--radius-sm);
-      margin-bottom: 0.5rem;
-      color: #e9d5ff;
-      font-weight: 500;
-      font-size: 0.75rem;
-
-      &.partial { animation: pulse 1s ease-in-out infinite; }
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.7; }
-    }
-  `]
 })
 export class ContextPanelComponent implements AfterViewChecked {
   @Input() title = 'Context';

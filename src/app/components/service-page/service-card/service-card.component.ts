@@ -139,7 +139,6 @@ import { LogPanelComponent } from '../log-panel/log-panel.component';
 
     </div>
   `,
-  styles: []
 })
 export class ServiceCardComponent {
   @Input({ required: true }) svc!: ServiceDetail;

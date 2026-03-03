@@ -31,42 +31,6 @@ import { MemoryPanelComponent } from '../memory-panel/memory-panel.component';
     MemoryPanelComponent,
   ],
   templateUrl: './dashboard.component.html',
-  styles: [`
-    .dashboard-container {
-      height: 100vh;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      padding: 1rem 2.5rem;
-      box-sizing: border-box;
-    }
-
-    .main-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1.5rem;
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-    }
-
-    .column {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-      min-height: 0;
-      overflow: hidden;
-    }
-
-    @media (max-width: 1400px) {
-      .main-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-
-    @media (max-width: 900px) {
-      .main-grid { grid-template-columns: 1fr; }
-      .dashboard-container { padding: 0.5rem 1.5rem; overflow-y: auto; }
-    }
-  `]
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   directorState: DirectorState | null = null;

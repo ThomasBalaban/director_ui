@@ -11,7 +11,6 @@ import { DevicePickerComponent } from './device-picker/device-picker.component';
   standalone: true,
   imports: [CommonModule, RouterLink, LogPanelComponent, DevicePickerComponent],
   templateUrl: './service-page.component.html',
-  styleUrl: './service-page.component.scss',
 })
 export class ServicesPageComponent extends PollingComponent {
   protected override pollingInterval = 4000;
