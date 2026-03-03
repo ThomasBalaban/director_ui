@@ -21,35 +21,8 @@ function fmtTime(ts: number): string {
   selector: 'app-sensor-feed-card',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div class="feed-card" [ngClass]="themeClass">
-      <div class="feed-header">
-        <div class="feed-header-left">
-          <span class="feed-icon">{{ icon }}</span>
-          <div>
-            <div class="feed-title">{{ title }}</div>
-            <div class="feed-meta">{{ meta }}</div>
-          </div>
-        </div>
-        <span class="feed-count-badge">{{ entries.length }}</span>
-      </div>
-      <div class="feed-body" #scrollContainer>
-        <div *ngFor="let entry of entries; let i = index"
-             class="feed-entry"
-             [ngClass]="entryClass"
-             [class.feed-entry--partial]="entry.isPartial"
-             [class.feed-entry--latest]="i === entries.length - 1 && !entry.isPartial">
-          <span class="entry-ts" [class.entry-ts--partial]="entry.isPartial">{{ fmt(entry.ts) }}</span>
-          <span class="partial-tag" *ngIf="entry.isPartial">~</span>
-          <span class="entry-text">{{ entry.text }}</span>
-        </div>
-        <div *ngIf="!entries.length" class="feed-empty">
-          <span class="empty-icon">{{ icon }}</span>
-          {{ emptyMessage }}
-        </div>
-      </div>
-    </div>
-  `
+  templateUrl: 'sensor-feed-card.component.html',
+  styleUrl: 'sensors-page.component.scss',
 })
 export class SensorFeedCardComponent implements AfterViewChecked {
   @Input({ required: true }) title!: string;
@@ -65,7 +38,6 @@ export class SensorFeedCardComponent implements AfterViewChecked {
   fmt = fmtTime;
 
   ngAfterViewChecked() {
-    // Only scroll when new items are added, handled perfectly locally
     if (this.entries.length !== this.previousCount) {
       this.scrollToBottom();
       this.previousCount = this.entries.length;
@@ -84,6 +56,7 @@ export class SensorFeedCardComponent implements AfterViewChecked {
   standalone: true,
   imports: [CommonModule, RouterLink, SensorFeedCardComponent],
   templateUrl: 'sensors-page.component.html',
+  styleUrl: 'sensors-page.component.scss',
 })
 export class SensorsPageComponent implements OnInit, OnDestroy {
   visionLog: TimestampedEntry[] = [];
@@ -121,7 +94,6 @@ export class SensorsPageComponent implements OnInit, OnDestroy {
     }));
   }
 
-  // Extracted repeated timestamping logic
   private processLog(newLog: string[], currentLog: TimestampedEntry[], prevCount: number): TimestampedEntry[] {
     if (newLog.length > prevCount) {
       const newEntries = newLog.slice(prevCount).map(text => ({ text, ts: Date.now() }));

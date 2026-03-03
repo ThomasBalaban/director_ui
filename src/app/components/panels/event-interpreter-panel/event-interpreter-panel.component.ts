@@ -44,6 +44,8 @@ function confClass(c: number): string {
   selector: 'app-event-interpreter-panel',
   standalone: true,
   imports: [CommonModule],
+  // :host must live in component styles — global stylesheet :host has no effect
+  styles: [`:host { display: flex; flex-direction: column; flex: 1; min-height: 0; }`],
   template: `
     <div class="panel ei-panel">
 

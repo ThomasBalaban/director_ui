@@ -1,3 +1,11 @@
+// Pass-through flex sizing so .panel fills its ancestor column
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 // Lay out the title bar so actions sit on the right
 .panel-title {
   display: flex;

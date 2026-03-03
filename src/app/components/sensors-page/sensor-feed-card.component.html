@@ -1,0 +1,27 @@
+<div class="feed-card" [ngClass]="themeClass">
+  <div class="feed-header">
+    <div class="feed-header-left">
+      <span class="feed-icon">{{ icon }}</span>
+      <div>
+        <div class="feed-title">{{ title }}</div>
+        <div class="feed-meta">{{ meta }}</div>
+      </div>
+    </div>
+    <span class="feed-count-badge">{{ entries.length }}</span>
+  </div>
+  <div class="feed-body" #scrollContainer>
+    <div *ngFor="let entry of entries; let i = index"
+         class="feed-entry"
+         [ngClass]="entryClass"
+         [class.feed-entry--partial]="entry.isPartial"
+         [class.feed-entry--latest]="i === entries.length - 1 && !entry.isPartial">
+      <span class="entry-ts" [class.entry-ts--partial]="entry.isPartial">{{ fmt(entry.ts) }}</span>
+      <span class="partial-tag" *ngIf="entry.isPartial">~</span>
+      <span class="entry-text">{{ entry.text }}</span>
+    </div>
+    <div *ngIf="!entries.length" class="feed-empty">
+      <span class="empty-icon">{{ icon }}</span>
+      {{ emptyMessage }}
+    </div>
+  </div>
+</div>
