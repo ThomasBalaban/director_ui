@@ -37,5 +37,10 @@
     "target": "http://localhost:8020",
     "secure": false,
     "pathRewrite": { "^/context-service": "" }
+  },
+  "/event-interpreter": {
+    "target": "http://localhost:8022",
+    "secure": false,
+    "pathRewrite": { "^/event-interpreter": "" }
   }
 }

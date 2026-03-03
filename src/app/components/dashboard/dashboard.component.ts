@@ -16,6 +16,7 @@ import { MetricsPanelComponent } from '../metrics-panel/metrics-panel.component'
 import { MemoryPanelComponent } from '../memory-panel/memory-panel.component';
 import { UserPanelComponent } from '../user-panel/user-panel.component';
 import { ContextDrawerComponent } from '../context-drawer/context-drawer.component';
+import { EventInterpreterPanelComponent } from '../event-interpreter-panel/event-interpreter-panel.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -27,7 +28,8 @@ import { ContextDrawerComponent } from '../context-drawer/context-drawer.compone
     DirectivesPanelComponent,
     SummaryPanelComponent,
     InterestGraphComponent,
-    SensoryPanelComponent,   // ← classified output, NOT SensorsPageComponent
+    SensoryPanelComponent, 
+    EventInterpreterPanelComponent,
     ChatPanelComponent,
     MetricsPanelComponent,
     MemoryPanelComponent,
@@ -47,7 +49,7 @@ import { ContextDrawerComponent } from '../context-drawer/context-drawer.compone
 
     .main-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 1.5rem;
       flex: 1;
       min-height: 0;

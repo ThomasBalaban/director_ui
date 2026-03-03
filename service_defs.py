@@ -173,6 +173,17 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "health_url":   "http://localhost:8020/health",
         "managed":      True,
     },
+    "event_interpreter": {
+        "label":        "Event Interpreter",
+        "description":  "Gemini Flash discrete event classifier → classified_event + ai_context",
+        "cmd":          [conda_python("gemini-screen-watcher"),
+                        os.path.join(PARENT_DIR, "event_interpreter_service", "main.py")],
+        "cwd":          os.path.join(PARENT_DIR, "event_interpreter_service"),
+        "port":         8022,
+        "health_check": "http",
+        "health_url":   "http://localhost:8022/health",
+        "managed":      True,
+    },
 }
 
 # Boot-time health check retry counts per service
@@ -188,4 +199,5 @@ BOOT_RETRIES: Dict[str, int] = {
     "user_profile_service": 30,
     "memory_service": 40,
     "sensory_data": 30,
+    "event_interpreter": 30,
 }

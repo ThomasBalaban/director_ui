@@ -1,22 +1,15 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
-import { environment } from '../../../environments/environment';
 import {
-  DirectorState,
-  ScoredEvent,
-  TwitchMessage,
-  BotReply,
-  AiContextSuggestion,
-  Streamer,
-  ChatMessage,
-  AudioLogEntry,
-  ScoreEntry,
-  ClassifiedEvent
+  DirectorState, ScoredEvent, TwitchMessage, BotReply, AiContextSuggestion,
+  Streamer, ChatMessage, AudioLogEntry, ScoreEntry,
+  ClassifiedEvent, AiContextPacket
 } from '../interfaces/director.interfaces';
 
-const MAX_LOG = 50;
+const MAX_LOG             = 50;
 const MAX_SENSORY_HISTORY = 30;
+const MAX_EVENT_HISTORY   = 50;
 
 export interface ContinuousContext {
   type: string;
@@ -33,17 +26,15 @@ function trimLog<T>(arr: T[], limit: number = MAX_LOG): T[] {
   return arr.length > limit ? arr.slice(arr.length - limit) : arr;
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class DirectorService implements OnDestroy {
   private socket: Socket;
 
-  // === Connection ===
+  // Connection
   private connectionStatusSubject = new BehaviorSubject<boolean>(false);
-  public connectionStatus$ = this.connectionStatusSubject.asObservable();
+  public  connectionStatus$       = this.connectionStatusSubject.asObservable();
 
-  // === Accumulated state (BehaviorSubjects — persists across navigation) ===
+  // Director core
   private directorStateSubject    = new BehaviorSubject<DirectorState | null>(null);
   private visionLogSubject        = new BehaviorSubject<string[]>([]);
   private spokenLogSubject        = new BehaviorSubject<string[]>([]);
@@ -52,14 +43,6 @@ export class DirectorService implements OnDestroy {
   private namiRepliesSubject      = new BehaviorSubject<BotReply[]>([]);
   private scoreHistorySubject     = new BehaviorSubject<ScoreEntry[]>([]);
   private pendingAiContextSubject = new BehaviorSubject<string | null>(null);
-  private classifiedEventsSubject = new BehaviorSubject<ClassifiedEvent[]>([]);
-
-  // Persistent Sensory Panel State
-  private sensoryHistorySubject  = new BehaviorSubject<HistoryEntry[]>([]);
-  private currentSensorySubject  = new BehaviorSubject<HistoryEntry | null>(null);
-  private pendingSnapshotSubject = new BehaviorSubject<ContinuousContext | null>(null);
-  private latestContextSubject   = new BehaviorSubject<any>(null);
-  private latestAiResponseSubject = new BehaviorSubject<{text: string, timestamp: string} | null>(null);
 
   public directorState$    = this.directorStateSubject.asObservable();
   public visionLog$        = this.visionLogSubject.asObservable();
@@ -70,118 +53,113 @@ export class DirectorService implements OnDestroy {
   public scoreHistory$     = this.scoreHistorySubject.asObservable();
   public pendingAiContext$ = this.pendingAiContextSubject.asObservable();
 
-  // Sensory Panel Observables
+  // ── Event Interpreter Service ─────────────────────────────────────────────
+  private classifiedEventsSubject = new BehaviorSubject<ClassifiedEvent[]>([]);
+  private latestEventSubject      = new BehaviorSubject<ClassifiedEvent | null>(null);
+  private latestAiContextSubject  = new BehaviorSubject<AiContextPacket | null>(null);
+
+  public classifiedEvents$      = this.classifiedEventsSubject.asObservable();
+  public latestClassifiedEvent$ = this.latestEventSubject.asObservable();
+  public latestAiContext$       = this.latestAiContextSubject.asObservable();
+
+  // ── Sensory Aggregator pipeline ───────────────────────────────────────────
+  private sensoryHistorySubject   = new BehaviorSubject<HistoryEntry[]>([]);
+  private currentSensorySubject   = new BehaviorSubject<HistoryEntry | null>(null);
+  private pendingSnapshotSubject  = new BehaviorSubject<ContinuousContext | null>(null);
+  private latestContextSubject    = new BehaviorSubject<any>(null);
+  private latestAiResponseSubject = new BehaviorSubject<{text: string; timestamp: string} | null>(null);
+
   public sensoryHistory$   = this.sensoryHistorySubject.asObservable();
   public currentSensory$   = this.currentSensorySubject.asObservable();
   public pendingSnapshot$  = this.pendingSnapshotSubject.asObservable();
-  public latestAiContext$  = this.latestContextSubject.asObservable();
+  public latestRawContext$ = this.latestContextSubject.asObservable();
   public latestAiResponse$ = this.latestAiResponseSubject.asObservable();
 
-  // Raw subject kept for any component that needs one-shot AI suggestion events
   private aiSuggestionSubject = new Subject<AiContextSuggestion>();
-  public aiSuggestion$ = this.aiSuggestionSubject.asObservable();
+  public  aiSuggestion$       = this.aiSuggestionSubject.asObservable();
 
   constructor() {
-    this.socket = io('http://localhost:8002'); 
+    this.socket = io('http://localhost:8002');
     this.setupSocketListeners();
   }
 
   private setupSocketListeners(): void {
-    this.socket.on('connect', () => {
-      console.log('[DirectorService] Connected to Director Engine');
-      this.connectionStatusSubject.next(true);
-    });
+    this.socket.on('connect',       () => { this.connectionStatusSubject.next(true); });
+    this.socket.on('disconnect',    () => { this.connectionStatusSubject.next(false); });
+    this.socket.on('connect_error', () => { this.connectionStatusSubject.next(false); });
 
-    this.socket.on('disconnect', () => {
-      console.log('[DirectorService] Disconnected from Director Engine');
-      this.connectionStatusSubject.next(false);
-    });
-
-    this.socket.on('connect_error', (error: Error) => {
-      console.error('[DirectorService] Connection error:', error);
-      this.connectionStatusSubject.next(false);
-    });
-
-    // Director state
     this.socket.on('director_state', (data: DirectorState) => {
       this.directorStateSubject.next(data);
     });
 
-    // Vision
     this.socket.on('vision_context', (data: { context: string }) => {
       this.visionLogSubject.next(trimLog([...this.visionLogSubject.value, data.context]));
     });
 
-    // Spoken word
     this.socket.on('spoken_word_context', (data: { context: string }) => {
       this.spokenLogSubject.next(trimLog([...this.spokenLogSubject.value, data.context]));
     });
 
-    // Audio (supports partial/streaming updates)
     this.socket.on('audio_context', (data: { context: string; is_partial: boolean; session_id?: string }) => {
       let log = [...this.audioLogSubject.value];
       if (data.is_partial && data.session_id) {
         const idx = log.findIndex(a => a.sessionId === data.session_id);
-        if (idx >= 0) {
-          log[idx] = { text: data.context, sessionId: data.session_id, isPartial: true };
-        } else {
-          log.push({ text: data.context, sessionId: data.session_id, isPartial: true });
-        }
+        if (idx >= 0) log[idx] = { text: data.context, sessionId: data.session_id, isPartial: true };
+        else          log.push({ text: data.context, sessionId: data.session_id, isPartial: true });
       } else {
         log.push({ text: data.context, sessionId: data.session_id, isPartial: false });
       }
       this.audioLogSubject.next(trimLog(log));
     });
 
-    // Twitch chat
     this.socket.on('twitch_message', (data: TwitchMessage) => {
       const isMention = /(nami|peepingnami)/gi.test(data.message);
-      this.chatMessagesSubject.next(
-        trimLog([...this.chatMessagesSubject.value, { username: data.username, message: data.message, isMention, timestamp: Date.now() }])
-      );
+      this.chatMessagesSubject.next(trimLog([
+        ...this.chatMessagesSubject.value,
+        { username: data.username, message: data.message, isMention, timestamp: Date.now() }
+      ]));
     });
 
-    // Bot reply — goes into both chat and nami replies
     this.socket.on('bot_reply', (data: BotReply) => {
       this.namiRepliesSubject.next(trimLog([...this.namiRepliesSubject.value, data]));
-      this.chatMessagesSubject.next(
-        trimLog([...this.chatMessagesSubject.value, { username: 'Nami', message: data.reply, isNami: true, timestamp: Date.now() }])
-      );
+      this.chatMessagesSubject.next(trimLog([
+        ...this.chatMessagesSubject.value,
+        { username: 'Nami', message: data.reply, isNami: true, timestamp: Date.now() }
+      ]));
     });
 
-    // Interest scoring
     this.socket.on('event_scored', (data: ScoredEvent) => {
-      const history = [...this.scoreHistorySubject.value, { score: data.score, source: data.source, text: data.text, timestamp: Date.now() }];
+      const history = [...this.scoreHistorySubject.value,
+        { score: data.score, source: data.source, text: data.text, timestamp: Date.now() }];
       if (history.length > MAX_LOG) history.shift();
       this.scoreHistorySubject.next(history);
     });
 
-    // AI context suggestions
     this.socket.on('ai_context_suggestion', (data: AiContextSuggestion) => {
       this.aiSuggestionSubject.next(data);
-      if (data.context) {
-        this.pendingAiContextSubject.next(data.context);
-      }
+      if (data.context) this.pendingAiContextSubject.next(data.context);
     });
 
+    // ── Event Interpreter ─────────────────────────────────────────────────
     this.socket.on('classified_event', (data: ClassifiedEvent) => {
-      const history = [...this.classifiedEventsSubject.value, data];
-      if (history.length > MAX_LOG) history.shift();
-      this.classifiedEventsSubject.next(history);
+      const updated = trimLog([...this.classifiedEventsSubject.value, data], MAX_EVENT_HISTORY);
+      this.classifiedEventsSubject.next(updated);
+      this.latestEventSubject.next(data);
     });
 
-    // Sensory Pipeline: Handle incoming contexts and push to history
+    this.socket.on('ai_context', (data: AiContextPacket) => {
+      this.latestAiContextSubject.next(data);
+    });
+
+    // ── Sensory Aggregator ────────────────────────────────────────────────
     this.socket.on('continuous_context', (data: any) => {
       this.latestContextSubject.next(data);
-
       let snapshot: ContinuousContext;
       if (typeof data === 'string') {
         snapshot = { type: 'continuous_context', context_string: data, timestamp: new Date().toISOString() };
       } else if (data?.context_string) {
         snapshot = data as ContinuousContext;
-      } else {
-        return;
-      }
+      } else { return; }
 
       const current = this.currentSensorySubject.value;
       if (!current) {
@@ -189,74 +167,47 @@ export class DirectorService implements OnDestroy {
       } else if (!current.aiResponse) {
         this.pendingSnapshotSubject.next(snapshot);
       } else {
-        const history = trimLog([...this.sensoryHistorySubject.value, current], MAX_SENSORY_HISTORY);
-        this.sensoryHistorySubject.next(history);
+        this.sensoryHistorySubject.next(trimLog([...this.sensoryHistorySubject.value, current], MAX_SENSORY_HISTORY));
         this.currentSensorySubject.next({ snapshot, aiResponse: null });
       }
     });
 
-    // Sensory Pipeline: Match AI responses to the current evaluation
     this.socket.on('ai_response', (data: any) => {
       this.latestAiResponseSubject.next(data);
-
       const current = this.currentSensorySubject.value;
       if (!current) return;
-
       const updatedCurrent = { ...current, aiResponse: data };
       this.currentSensorySubject.next(updatedCurrent);
-
       const pending = this.pendingSnapshotSubject.value;
       if (pending) {
-        const history = trimLog([...this.sensoryHistorySubject.value, updatedCurrent], MAX_SENSORY_HISTORY);
-        this.sensoryHistorySubject.next(history);
+        this.sensoryHistorySubject.next(trimLog([...this.sensoryHistorySubject.value, updatedCurrent], MAX_SENSORY_HISTORY));
         this.currentSensorySubject.next({ snapshot: pending, aiResponse: null });
         this.pendingSnapshotSubject.next(null);
       }
     });
   }
 
-  // === Emit Methods ===
-  setStreamer(streamerId: string): void { this.socket.emit('set_streamer', { streamer_id: streamerId }); }
+  setStreamer(streamerId: string): void   { this.socket.emit('set_streamer',      { streamer_id: streamerId }); }
   setManualContext(context: string): void { this.socket.emit('set_manual_context', { context }); }
-  setStreamerLock(locked: boolean): void { this.socket.emit('set_streamer_lock', { locked }); }
-  setContextLock(locked: boolean): void { this.socket.emit('set_context_lock', { locked }); }
+  setStreamerLock(locked: boolean): void  { this.socket.emit('set_streamer_lock',  { locked }); }
+  setContextLock(locked: boolean): void   { this.socket.emit('set_context_lock',   { locked }); }
   sendEvent(sourceStr: string, text: string, metadata: Record<string, unknown> = {}, username?: string): void {
     this.socket.emit('event', { source_str: sourceStr, text, metadata, username });
   }
+  clearPendingAiContext(): void { this.pendingAiContextSubject.next(null); }
 
-  clearPendingAiContext(): void {
-    this.pendingAiContextSubject.next(null);
-  }
-
-  // === HTTP API Methods ===
   async fetchStreamers(): Promise<Streamer[]> {
-    try {
-      const data = await (await fetch('/assets/streamers.json')).json();
-      return data.streamers || [];
-    } catch {
-      return [{ id: 'peepingotter', display_name: 'PeepingOtter' }];
-    }
+    try { const data = await (await fetch('/assets/streamers.json')).json(); return data.streamers || []; }
+    catch { return [{ id: 'peepingotter', display_name: 'PeepingOtter' }]; }
   }
-
   async fetchBreadcrumbs(): Promise<{ formatted_context: string }> {
-    try {
-      return await (await fetch('/breadcrumbs')).json();
-    } catch (error) {
-      console.error('[DirectorService] Failed to fetch breadcrumbs:', error);
-      return { formatted_context: '[Error fetching context]' };
-    }
+    try { return await (await fetch('/breadcrumbs')).json(); }
+    catch { return { formatted_context: '[Error fetching context]' }; }
   }
-
   async fetchSummaryData(): Promise<unknown> {
-    try {
-      return await (await fetch('/summary_data')).json();
-    } catch (error) {
-      console.error('[DirectorService] Failed to fetch summary data:', error);
-      return null;
-    }
+    try { return await (await fetch('/summary_data')).json(); }
+    catch { return null; }
   }
 
-  ngOnDestroy(): void {
-    if (this.socket) this.socket.disconnect();
-  }
+  ngOnDestroy(): void { if (this.socket) this.socket.disconnect(); }
 }

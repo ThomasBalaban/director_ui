@@ -168,23 +168,48 @@ export interface ScoreEntry {
   timestamp?: number;
 }
 
-export interface SenseContextLine {
-  text: string;
-  iso_ts: string;
-  source: string;
+/** Per-entry sense data included in classified_event.context.vision/audio/mic */
+export interface SenseContextEntry {
+  text:    string;
+  iso_ts:  string;   // ISO 8601 wall-clock from source service
+  unix_ts: number;   // Unix float from source service
+  source:  string;   // "vision" | "audio" | "mic"
+  age_s:   number;   // Age in seconds at classify time
 }
 
+/** Freshest entry age per sense at classify time (seconds). */
+export interface SenseAges {
+  vision?: number;
+  audio?:  number;
+  mic?:    number;
+}
+
+
 export interface ClassifiedEvent {
-  event: string;
-  confidence: number;
-  summary: string;
-  timestamp: string;
+  event:          string;
+  confidence:     number;
+  summary:        string;
+  timestamp:      string;
+  sense_ages:     SenseAges;
   context: {
-    vision: SenseContextLine[];
-    audio: SenseContextLine[];
-    mic: SenseContextLine[];
+    vision: SenseContextEntry[];
+    audio:  SenseContextEntry[];
+    mic:    SenseContextEntry[];
   };
   player_speaking: boolean;
-  has_vision: boolean;
-  has_audio: boolean;
+  has_vision:      boolean;
+  has_audio:       boolean;
 }
+
+/**
+ * Human-readable context string from event_interpreter_service.
+ * Hub event: ai_context
+ */
+export interface AiContextPacket {
+  context:   string;
+  event:     string;
+  timestamp: string;
+}
+
+// Backwards-compat alias
+export type SenseContextLine = SenseContextEntry;
