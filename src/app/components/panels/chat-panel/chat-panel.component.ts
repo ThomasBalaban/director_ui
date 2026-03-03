@@ -1,7 +1,15 @@
-import { Component, Input, Output, EventEmitter, ElementRef, ViewChild, AfterViewChecked } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BotReply } from '../../../shared/interfaces/director.interfaces';
 import { BasePanelComponent } from '../base-panel/base-panel.component';
+
+// Define this interface to keep the code clean
+interface ChatMsg {
+  username: string;
+  message: string;
+  isNami?: boolean;
+  isMention?: boolean;
+}
 
 @Component({
   selector: 'app-chat-panel',
@@ -10,8 +18,7 @@ import { BasePanelComponent } from '../base-panel/base-panel.component';
   styleUrl: 'chat-panel.component.scss',
   template: `
     <app-base-panel [title]="title">
-      <!-- Wrap content in a scroll container so AfterViewChecked can target it -->
-      <div #scrollContainer class="chat-scroll">
+      <div class="chat-scroll">
 
         <ng-container *ngIf="!isNamiPanel">
           <div
@@ -46,21 +53,27 @@ import { BasePanelComponent } from '../base-panel/base-panel.component';
     </app-base-panel>
   `,
 })
-export class ChatPanelComponent implements AfterViewChecked {
+export class ChatPanelComponent {
   @Input() title = 'Chat';
-  @Input() messages: { username: string; message: string; isNami?: boolean; isMention?: boolean }[] = [];
-  @Input() namiReplies: BotReply[] = [];
   @Input() isNamiPanel = false;
 
   @Output() openDrawer = new EventEmitter<BotReply>();
 
-  @ViewChild('scrollContainer') scrollContainer!: ElementRef;
+  // Intercept the inputs and reverse the arrays so newest is at index 0
+  private _messages: ChatMsg[] = [];
+  @Input() set messages(val: ChatMsg[]) {
+    this._messages = val ? [...val].reverse() : [];
+  }
+  get messages(): ChatMsg[] {
+    return this._messages;
+  }
 
-  ngAfterViewChecked(): void {
-    if (this.scrollContainer) {
-      const el = this.scrollContainer.nativeElement;
-      el.scrollTop = el.scrollHeight;
-    }
+  private _namiReplies: BotReply[] = [];
+  @Input() set namiReplies(val: BotReply[]) {
+    this._namiReplies = val ? [...val].reverse() : [];
+  }
+  get namiReplies(): BotReply[] {
+    return this._namiReplies;
   }
 
   highlightMentions(message: string): string {
