@@ -43,18 +43,46 @@
     </div>
 
     <div class="column">
-      <app-directives-panel
-        [directive]="directorState?.directive || null"
-      ></app-directives-panel>
+      <app-base-panel title="⚡ Director's Orders" panelClass="directive-panel">
+        <div class="field">
+          <div class="label-caps">Objective</div>
+          <div class="objective">{{ directorState?.directive?.objective || 'Waiting...' }}</div>
+        </div>
 
-      <app-summary-panel
-        [summary]="directorState?.summary || 'Waiting for summary...'"
-        [rawContext]="directorState?.raw_context || ''"
-      ></app-summary-panel>
+        <div class="field">
+          <div class="label-caps">Required Tone</div>
+          <div class="tone">{{ directorState?.directive?.tone || 'Waiting...' }}</div>
+        </div>
 
-      <app-memory-panel
-            [memories]="directorState?.memories || []"
-          ></app-memory-panel>
+        <div class="field">
+          <div class="label-caps">Action</div>
+          <div class="action">{{ directorState?.directive?.suggested_action || 'Waiting...' }}</div>
+        </div>
+
+        <div class="constraints-box" *ngIf="directorState?.directive?.constraints?.length">
+          <div class="label-caps constraints-label">Constraints</div>
+          <div class="constraints-text">{{ directorState?.directive?.constraints?.join(', ') }}</div>
+        </div>
+      </app-base-panel>
+
+      <app-base-panel title="🧠 Situation Summary">
+        <div class="summary-text">{{ directorState?.summary || 'Waiting for summary...' }}</div>
+        <div class="raw-context">{{ directorState?.raw_context || '' }}</div>
+      </app-base-panel>
+
+      <app-base-panel title="💾 Memories">
+        <ul *ngIf="directorState?.memories?.length" class="memory-list">
+          <li *ngFor="let mem of directorState?.memories || []" class="memory-item">
+            <div class="memory-header">
+              <span class="memory-source">{{ mem.source }}</span>
+              <span class="memory-score">{{ mem.score }}</span>
+            </div>
+            <div class="memory-text">{{ mem.text }}</div>
+          </li>
+        </ul>
+
+        <p *ngIf="!directorState?.memories?.length" class="empty">No high-impact memories yet.</p>
+      </app-base-panel>
     </div>
 
   </div>

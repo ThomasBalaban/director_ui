@@ -1,0 +1,112 @@
+@use "../../../styles/utilities" as *;
+
+// Dashboard Host
+:host {
+  display: flex; 
+  flex-direction: column; 
+  flex: 1; 
+  min-height: 0;
+}
+
+// =========================================
+// Panel Content Styles
+// =========================================
+
+// --- Directives Panel ---
+::ng-deep .directive-panel {
+  background: linear-gradient(to bottom, var(--surface-4), var(--surface-3));
+  border-color: rgba(88, 28, 135, 0.5);
+
+  .panel-title {
+    color: var(--accent-purple-pale);
+    border-bottom-color: rgba(88, 28, 135, 0.3);
+  }
+}
+
+.field { 
+  margin-bottom: 0.75rem; 
+
+  .objective { 
+    font-size: 1.125rem; 
+    font-weight: bold; 
+    color: var(--text-white); 
+    line-height: 1.25; 
+  }
+  
+  .tone { 
+    font-size: 0.875rem; 
+    color: var(--accent-purple-pale); 
+  }
+  
+  .action { 
+    font-size: 0.875rem; 
+    color: var(--text-dim); 
+    font-style: italic; 
+  }
+}
+
+.constraints-box {
+  padding: 0.5rem;
+  background: rgba(127, 29, 29, 0.2);
+  border: 1px solid rgba(127, 29, 29, 0.5);
+  border-radius: var(--radius-sm);
+  margin-top: 0.5rem;
+
+  .constraints-label { color: var(--accent-red-light); }
+  .constraints-text  { font-size: 0.75rem; color: var(--accent-red-pale); }
+}
+
+// --- Situation Summary Panel ---
+.summary-text {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-white);
+  line-height: 1.5;
+}
+
+.raw-context {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-top: 1rem;
+  border-top: 1px dashed var(--border);
+  padding-top: 0.5rem;
+  white-space: pre-wrap;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+// --- Memories Panel ---
+.memory-list {
+  list-style: none; 
+  padding: 0; 
+  margin: 0;
+  display: flex; 
+  flex-direction: column; 
+  gap: 0.75rem;
+}
+
+.memory-item {
+  @include list-card(var(--accent-purple), 2px);
+
+  .memory-header { 
+    @include flex-between; 
+    margin-bottom: 0.25rem; 
+  }
+  
+  .memory-source { 
+    font-size: 0.75rem; 
+    font-weight: bold; 
+    color: var(--accent-purple-light); 
+  }
+  
+  .memory-score { 
+    font-size: 0.75rem; 
+    color: var(--text-dim); 
+  }
+  
+  .memory-text { 
+    font-size: 0.875rem; 
+    color: var(--text-dim); 
+    line-height: 1.4; 
+  }
+}
