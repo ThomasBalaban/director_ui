@@ -1,10 +1,11 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { PollingComponent } from '../../shared/polling.component';
 import { ServiceDetail, AudioDevice, STATUS_META, GUI_SERVICES } from '../../shared/interfaces/services.interface';
 import { LogPanelComponent } from './log-panel/log-panel.component';
 import { DevicePickerComponent } from './device-picker/device-picker.component';
+import { DirectorService } from '../../shared/services/director.service';
 
 @Component({
   selector: 'app-services-page',
@@ -13,6 +14,8 @@ import { DevicePickerComponent } from './device-picker/device-picker.component';
   templateUrl: './service-page.component.html',
 })
 export class ServicesPageComponent extends PollingComponent {
+  private directorService = inject(DirectorService);
+  
   protected override pollingInterval = 4000;
 
   services          = signal<ServiceDetail[]>([]);
@@ -214,6 +217,13 @@ export class ServicesPageComponent extends PollingComponent {
     this.setActionPending(svc.id, true);
     try {
       await fetch(`/launcher/services/${svc.id}/${action}`, { method: 'POST' });
+      
+      // Staggered reconnects for individual service restarts
+      if (action === 'start' || action === 'restart') {
+        setTimeout(() => this.directorService.forceReconnect(), 2000);
+        setTimeout(() => this.directorService.forceReconnect(), 4000);
+      }
+
       await this.poll();
       if (action !== 'stop') setTimeout(() => this.poll(), action === 'restart' ? 3000 : 2000);
       if (action === 'start') setTimeout(() => this.poll(), 5000);
@@ -248,10 +258,15 @@ export class ServicesPageComponent extends PollingComponent {
     if (!this.launcherOnline() || this.bulkActionPending()) return;
     const toStart = this.services().filter(s => s.managed && (s.status === 'offline' || s.status === 'unhealthy'));
     if (!toStart.length) return;
+    
     this.bulkActionPending.set(true);
     toStart.forEach(s => this.setActionPending(s.id, true));
     try {
       await Promise.all(toStart.map(svc => fetch(`/launcher/services/${svc.id}/start`, { method: 'POST' })));
+      
+      // Force a socket reconnect shortly after bulk starting
+      setTimeout(() => this.directorService.forceReconnect(), 2500);
+
       await this.poll();
       setTimeout(() => this.poll(), 5000);
     } finally {

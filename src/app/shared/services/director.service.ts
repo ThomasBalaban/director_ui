@@ -197,5 +197,12 @@ export class DirectorService implements OnDestroy {
     catch { return null; }
   }
 
+  forceReconnect(): void {
+    if (this.socket) {
+      console.log('[DirectorService] Forcing socket reconnection...');
+      this.socket.disconnect().connect();
+    }
+  }
+
   ngOnDestroy(): void { if (this.socket) this.socket.disconnect(); }
 }

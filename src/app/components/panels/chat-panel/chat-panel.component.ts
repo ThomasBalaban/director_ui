@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, input, output, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BotReply } from '../../../shared/interfaces/director.interfaces';
 import { BasePanelComponent } from '../base-panel/base-panel.component';
@@ -17,12 +17,12 @@ interface ChatMsg {
   imports: [CommonModule, BasePanelComponent],
   styleUrl: 'chat-panel.component.scss',
   template: `
-    <app-base-panel [title]="title">
+    <app-base-panel [title]="title()">
       <div class="chat-scroll">
 
-        <ng-container *ngIf="!isNamiPanel">
+        <ng-container *ngIf="!isNamiPanel()">
           <div
-            *ngFor="let msg of messages"
+            *ngFor="let msg of reversedMessages()"
             class="log-line"
             [class.mention-bg]="msg.isMention"
             [class.nami-msg]="msg.isNami"
@@ -30,12 +30,12 @@ interface ChatMsg {
             <span class="username" [class.nami]="msg.isNami">{{ msg.username }}:</span>
             <span [innerHTML]="highlightMentions(msg.message)"></span>
           </div>
-          <div *ngIf="!messages.length" class="empty">No messages yet...</div>
+          <div *ngIf="!reversedMessages().length" class="empty">No messages yet...</div>
         </ng-container>
 
-        <ng-container *ngIf="isNamiPanel">
+        <ng-container *ngIf="isNamiPanel()">
           <div
-            *ngFor="let reply of namiReplies"
+            *ngFor="let reply of reversedReplies()"
             class="log-line nami-reply"
             [class.censored]="reply.is_censored"
             (click)="openDrawer.emit(reply)"
@@ -46,7 +46,7 @@ interface ChatMsg {
             </span>
             <span class="context-hint">📄 Context</span>
           </div>
-          <div *ngIf="!namiReplies.length" class="empty">No replies yet...</div>
+          <div *ngIf="!reversedReplies().length" class="empty">No replies yet...</div>
         </ng-container>
 
       </div>
@@ -54,27 +54,21 @@ interface ChatMsg {
   `,
 })
 export class ChatPanelComponent {
-  @Input() title = 'Chat';
-  @Input() isNamiPanel = false;
+  // Converted to input signals
+  title = input<string>('Chat');
+  isNamiPanel = input<boolean>(false);
+  
+  // Raw inputs
+  messages = input<ChatMsg[]>([]);
+  namiReplies = input<BotReply[]>([]);
 
-  @Output() openDrawer = new EventEmitter<BotReply>();
+  // Computed signals automatically run only when the array actually changes,
+  // making rendering much more efficient!
+  reversedMessages = computed(() => [...this.messages()].reverse());
+  reversedReplies = computed(() => [...this.namiReplies()].reverse());
 
-  // Intercept the inputs and reverse the arrays so newest is at index 0
-  private _messages: ChatMsg[] = [];
-  @Input() set messages(val: ChatMsg[]) {
-    this._messages = val ? [...val].reverse() : [];
-  }
-  get messages(): ChatMsg[] {
-    return this._messages;
-  }
-
-  private _namiReplies: BotReply[] = [];
-  @Input() set namiReplies(val: BotReply[]) {
-    this._namiReplies = val ? [...val].reverse() : [];
-  }
-  get namiReplies(): BotReply[] {
-    return this._namiReplies;
-  }
+  // Converted to output signal
+  openDrawer = output<BotReply>();
 
   highlightMentions(message: string): string {
     const escaped = this.escapeHtml(message);
