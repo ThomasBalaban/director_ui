@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter, ElementRef, ViewChild, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { BotReply } from '../../shared/interfaces/director.interfaces';
+import { BotReply } from '../../../shared/interfaces/director.interfaces';
 
 @Component({
   selector: 'app-chat-panel',

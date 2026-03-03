@@ -1,6 +1,7 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
+import { environment } from '../../../environments/environment';
 import {
   DirectorState, ScoredEvent, TwitchMessage, BotReply, AiContextSuggestion,
   Streamer, ChatMessage, AudioLogEntry, ScoreEntry,
@@ -30,11 +31,11 @@ function trimLog<T>(arr: T[], limit: number = MAX_LOG): T[] {
 export class DirectorService implements OnDestroy {
   private socket: Socket;
 
-  // Connection
+  // === Connection ===
   private connectionStatusSubject = new BehaviorSubject<boolean>(false);
   public  connectionStatus$       = this.connectionStatusSubject.asObservable();
 
-  // Director core
+  // === Director Core ===
   private directorStateSubject    = new BehaviorSubject<DirectorState | null>(null);
   private visionLogSubject        = new BehaviorSubject<string[]>([]);
   private spokenLogSubject        = new BehaviorSubject<string[]>([]);
@@ -53,7 +54,7 @@ export class DirectorService implements OnDestroy {
   public scoreHistory$     = this.scoreHistorySubject.asObservable();
   public pendingAiContext$ = this.pendingAiContextSubject.asObservable();
 
-  // ── Event Interpreter Service ─────────────────────────────────────────────
+  // === Event Interpreter Service ===
   private classifiedEventsSubject = new BehaviorSubject<ClassifiedEvent[]>([]);
   private latestEventSubject      = new BehaviorSubject<ClassifiedEvent | null>(null);
   private latestAiContextSubject  = new BehaviorSubject<AiContextPacket | null>(null);
@@ -62,7 +63,7 @@ export class DirectorService implements OnDestroy {
   public latestClassifiedEvent$ = this.latestEventSubject.asObservable();
   public latestAiContext$       = this.latestAiContextSubject.asObservable();
 
-  // ── Sensory Aggregator pipeline ───────────────────────────────────────────
+  // === Sensory Aggregator pipeline ===
   private sensoryHistorySubject   = new BehaviorSubject<HistoryEntry[]>([]);
   private currentSensorySubject   = new BehaviorSubject<HistoryEntry | null>(null);
   private pendingSnapshotSubject  = new BehaviorSubject<ContinuousContext | null>(null);
@@ -79,26 +80,24 @@ export class DirectorService implements OnDestroy {
   public  aiSuggestion$       = this.aiSuggestionSubject.asObservable();
 
   constructor() {
-    this.socket = io('http://localhost:8002');
+    this.socket = io(environment.socketUrl, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000
+    });
     this.setupSocketListeners();
   }
 
   private setupSocketListeners(): void {
-    this.socket.on('connect',       () => { this.connectionStatusSubject.next(true); });
-    this.socket.on('disconnect',    () => { this.connectionStatusSubject.next(false); });
-    this.socket.on('connect_error', () => { this.connectionStatusSubject.next(false); });
+    this.socket.on('connect',       () => { console.log('[DirectorService] Connected'); this.connectionStatusSubject.next(true); });
+    this.socket.on('disconnect',    () => { console.log('[DirectorService] Disconnected'); this.connectionStatusSubject.next(false); });
+    this.socket.on('connect_error', (err) => { console.error('[DirectorService] Connection error:', err); this.connectionStatusSubject.next(false); });
 
-    this.socket.on('director_state', (data: DirectorState) => {
-      this.directorStateSubject.next(data);
-    });
-
-    this.socket.on('vision_context', (data: { context: string }) => {
-      this.visionLogSubject.next(trimLog([...this.visionLogSubject.value, data.context]));
-    });
-
-    this.socket.on('spoken_word_context', (data: { context: string }) => {
-      this.spokenLogSubject.next(trimLog([...this.spokenLogSubject.value, data.context]));
-    });
+    this.socket.on('director_state', (data: DirectorState) => this.directorStateSubject.next(data));
+    this.socket.on('vision_context', (data: { context: string }) => this.visionLogSubject.next(trimLog([...this.visionLogSubject.value, data.context])));
+    this.socket.on('spoken_word_context', (data: { context: string }) => this.spokenLogSubject.next(trimLog([...this.spokenLogSubject.value, data.context])));
 
     this.socket.on('audio_context', (data: { context: string; is_partial: boolean; session_id?: string }) => {
       let log = [...this.audioLogSubject.value];
@@ -129,10 +128,8 @@ export class DirectorService implements OnDestroy {
     });
 
     this.socket.on('event_scored', (data: ScoredEvent) => {
-      const history = [...this.scoreHistorySubject.value,
-        { score: data.score, source: data.source, text: data.text, timestamp: Date.now() }];
-      if (history.length > MAX_LOG) history.shift();
-      this.scoreHistorySubject.next(history);
+      const history = [...this.scoreHistorySubject.value, { score: data.score, source: data.source, text: data.text, timestamp: Date.now() }];
+      this.scoreHistorySubject.next(trimLog(history));
     });
 
     this.socket.on('ai_context_suggestion', (data: AiContextSuggestion) => {
@@ -140,33 +137,24 @@ export class DirectorService implements OnDestroy {
       if (data.context) this.pendingAiContextSubject.next(data.context);
     });
 
-    // ── Event Interpreter ─────────────────────────────────────────────────
     this.socket.on('classified_event', (data: ClassifiedEvent) => {
-      const updated = trimLog([...this.classifiedEventsSubject.value, data], MAX_EVENT_HISTORY);
-      this.classifiedEventsSubject.next(updated);
+      this.classifiedEventsSubject.next(trimLog([...this.classifiedEventsSubject.value, data], MAX_EVENT_HISTORY));
       this.latestEventSubject.next(data);
     });
 
-    this.socket.on('ai_context', (data: AiContextPacket) => {
-      this.latestAiContextSubject.next(data);
-    });
+    this.socket.on('ai_context', (data: AiContextPacket) => this.latestAiContextSubject.next(data));
 
-    // ── Sensory Aggregator ────────────────────────────────────────────────
     this.socket.on('continuous_context', (data: any) => {
       this.latestContextSubject.next(data);
       let snapshot: ContinuousContext;
-      if (typeof data === 'string') {
-        snapshot = { type: 'continuous_context', context_string: data, timestamp: new Date().toISOString() };
-      } else if (data?.context_string) {
-        snapshot = data as ContinuousContext;
-      } else { return; }
+      if (typeof data === 'string') snapshot = { type: 'continuous_context', context_string: data, timestamp: new Date().toISOString() };
+      else if (data?.context_string) snapshot = data as ContinuousContext;
+      else return;
 
       const current = this.currentSensorySubject.value;
-      if (!current) {
-        this.currentSensorySubject.next({ snapshot, aiResponse: null });
-      } else if (!current.aiResponse) {
-        this.pendingSnapshotSubject.next(snapshot);
-      } else {
+      if (!current) this.currentSensorySubject.next({ snapshot, aiResponse: null });
+      else if (!current.aiResponse) this.pendingSnapshotSubject.next(snapshot);
+      else {
         this.sensoryHistorySubject.next(trimLog([...this.sensoryHistorySubject.value, current], MAX_SENSORY_HISTORY));
         this.currentSensorySubject.next({ snapshot, aiResponse: null });
       }
@@ -187,10 +175,10 @@ export class DirectorService implements OnDestroy {
     });
   }
 
-  setStreamer(streamerId: string): void   { this.socket.emit('set_streamer',      { streamer_id: streamerId }); }
+  setStreamer(streamerId: string): void { this.socket.emit('set_streamer', { streamer_id: streamerId }); }
   setManualContext(context: string): void { this.socket.emit('set_manual_context', { context }); }
-  setStreamerLock(locked: boolean): void  { this.socket.emit('set_streamer_lock',  { locked }); }
-  setContextLock(locked: boolean): void   { this.socket.emit('set_context_lock',   { locked }); }
+  setStreamerLock(locked: boolean): void { this.socket.emit('set_streamer_lock', { locked }); }
+  setContextLock(locked: boolean): void { this.socket.emit('set_context_lock', { locked }); }
   sendEvent(sourceStr: string, text: string, metadata: Record<string, unknown> = {}, username?: string): void {
     this.socket.emit('event', { source_str: sourceStr, text, metadata, username });
   }

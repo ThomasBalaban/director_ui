@@ -3,8 +3,8 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
-import { DirectorService } from '../../shared/services/director.service';
-import { ClassifiedEvent, AiContextPacket } from '../../shared/interfaces/director.interfaces';
+import { DirectorService } from '../../../shared/services/director.service';
+import { ClassifiedEvent, AiContextPacket } from '../../../shared/interfaces/director.interfaces';
 
 const EVENT_META: Record<string, { icon: string; color: string; bg: string }> = {
   PLAYER_DEATH:     { icon: '💀', color: '#f87171', bg: 'rgba(239,68,68,0.12)' },
@@ -79,14 +79,14 @@ function confClass(c: number): string {
 
           <div class="sense-row">
             <span class="sense-label">Senses</span>
-            <span class="sense-pill" [class.fresh]="isFresh(latest.sense_ages?.vision)" *ngIf="latest.has_vision">
-              👁️ {{ ageStr(latest.sense_ages?.vision) }}
+            <span class="sense-pill" [class.fresh]="isFresh(latest.sense_ages.vision)" *ngIf="latest.has_vision">
+              👁️ {{ ageStr(latest.sense_ages.vision) }}
             </span>
-            <span class="sense-pill" [class.fresh]="isFresh(latest.sense_ages?.audio)" *ngIf="latest.has_audio">
-              🔊 {{ ageStr(latest.sense_ages?.audio) }}
+            <span class="sense-pill" [class.fresh]="isFresh(latest.sense_ages.audio)" *ngIf="latest.has_audio">
+              🔊 {{ ageStr(latest.sense_ages.audio) }}
             </span>
-            <span class="sense-pill" [class.fresh]="isFresh(latest.sense_ages?.mic)" *ngIf="latest.player_speaking">
-              🎙️ {{ ageStr(latest.sense_ages?.mic) }}
+            <span class="sense-pill" [class.fresh]="isFresh(latest.sense_ages.mic)" *ngIf="latest.player_speaking">
+              🎙️ {{ ageStr(latest.sense_ages.mic) }}
             </span>
           </div>
 

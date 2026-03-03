@@ -4,9 +4,9 @@ import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { DirectorService } from '../../shared/services/director.service';
 import { DirectorState } from '../../shared/interfaces/director.interfaces';
-import { MetricsPanelComponent } from '../metrics-panel/metrics-panel.component';
+import { MetricsPanelComponent } from '../panels/metrics-panel/metrics-panel.component';
 import { InterestGraphComponent } from '../interest-graph/interest-graph.component';
-import { UserPanelComponent } from '../user-panel/user-panel.component';
+import { UserPanelComponent } from '../panels/user-panel/user-panel.component';
 
 @Component({
   selector: 'app-brain-page',

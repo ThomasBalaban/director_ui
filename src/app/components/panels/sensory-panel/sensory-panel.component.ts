@@ -2,8 +2,8 @@ import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked }
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { DirectorService, ContinuousContext, HistoryEntry } from '../../shared/services/director.service';
-import { ContextDrawerComponent } from '../context-drawer/context-drawer.component';
+import { DirectorService, ContinuousContext, HistoryEntry } from '../../../shared/services/director.service';
+import { ContextDrawerComponent } from '../../context-drawer/context-drawer.component';
 
 @Component({
   selector: 'app-sensory-panel',

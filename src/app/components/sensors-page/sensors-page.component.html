@@ -1,0 +1,39 @@
+<div class="page">
+    <div class="page-header">
+    <div class="page-header-left">
+        <a routerLink="/" class="back-btn">← Dashboard</a>
+        <h1 class="page-title"><span class="title-icon">🔭</span> Raw Sensor Feeds</h1>
+        <span class="live-badge"><span class="live-dot"></span> LIVE</span>
+    </div>
+    <div class="page-header-right">
+        <span class="feed-count">{{ totalEntries }} entries captured</span>
+    </div>
+    </div>
+
+    <div class="page-content">
+    <div class='page-grid page-grid-3'>
+        
+        <app-sensor-feed-card
+        title="Vision" icon="👁️" meta="Gemini 2.5 Flash · 12s window"
+        themeClass="feed-vision" entryClass="feed-entry--vision"
+        emptyMessage="Waiting for vision data..."
+        [entries]="visionLog">
+        </app-sensor-feed-card>
+
+        <app-sensor-feed-card
+        title="Microphone" icon="🎤" meta="Parakeet MLX · 30s window"
+        themeClass="feed-mic" entryClass="feed-entry--mic"
+        emptyMessage="Waiting for mic audio..."
+        [entries]="spokenLog">
+        </app-sensor-feed-card>
+
+        <app-sensor-feed-card
+        title="Desktop Audio" icon="🖥️" meta="OpenAI Realtime + GPT-4o · 12s window"
+        themeClass="feed-audio" entryClass="feed-entry--audio"
+        emptyMessage="Waiting for desktop audio..."
+        [entries]="audioLog">
+        </app-sensor-feed-card>
+
+    </div>
+    </div>
+</div>

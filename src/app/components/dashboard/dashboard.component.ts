@@ -8,12 +8,12 @@ import { DirectorState, BotReply, Streamer, ChatMessage } from '../../shared/int
 // Child Components
 import { HeaderComponent } from '../header/header.component';
 import { DirectivesPanelComponent } from '../directives-panel/directives-panel.component';
-import { SummaryPanelComponent } from '../summary-panel/summary-panel.component';
-import { SensoryPanelComponent } from '../sensory-panel/sensory-panel.component';
-import { ChatPanelComponent } from '../chat-panel/chat-panel.component';
+import { SummaryPanelComponent } from '../panels/summary-panel/summary-panel.component';
+import { SensoryPanelComponent } from '../panels/sensory-panel/sensory-panel.component';
+import { ChatPanelComponent } from '../panels/chat-panel/chat-panel.component';
 import { ContextDrawerComponent } from '../context-drawer/context-drawer.component';
-import { EventInterpreterPanelComponent } from '../event-interpreter-panel/event-interpreter-panel.component';
-import { MemoryPanelComponent } from '../memory-panel/memory-panel.component';
+import { EventInterpreterPanelComponent } from '../panels/event-interpreter-panel/event-interpreter-panel.component';
+import { MemoryPanelComponent } from '../panels/memory-panel/memory-panel.component';
 
 @Component({
   selector: 'app-dashboard',
