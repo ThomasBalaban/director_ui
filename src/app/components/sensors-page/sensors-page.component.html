@@ -6,7 +6,7 @@
         <span class="live-badge"><span class="live-dot"></span> LIVE</span>
     </div>
     <div class="page-header-right">
-        <span class="feed-count">{{ totalEntries }} entries captured</span>
+        <span class="feed-count">{{ totalEntries() }} entries captured</span>
     </div>
     </div>
 
@@ -17,21 +17,21 @@
         title="Vision" icon="👁️" meta="Gemini 2.5 Flash · 12s window"
         themeClass="feed-vision" entryClass="feed-entry--vision"
         emptyMessage="Waiting for vision data..."
-        [entries]="visionLog">
+        [entries]="visionLog()">
         </app-sensor-feed-card>
 
         <app-sensor-feed-card
         title="Microphone" icon="🎤" meta="Parakeet MLX · 30s window"
         themeClass="feed-mic" entryClass="feed-entry--mic"
         emptyMessage="Waiting for mic audio..."
-        [entries]="spokenLog">
+        [entries]="spokenLog()">
         </app-sensor-feed-card>
 
         <app-sensor-feed-card
         title="Desktop Audio" icon="🖥️" meta="OpenAI Realtime + GPT-4o · 12s window"
         themeClass="feed-audio" entryClass="feed-entry--audio"
         emptyMessage="Waiting for desktop audio..."
-        [entries]="audioLog">
+        [entries]="audioLog()">
         </app-sensor-feed-card>
 
     </div>

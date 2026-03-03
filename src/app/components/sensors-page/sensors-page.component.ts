@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ElementRef, ViewChild, AfterViewChecked, Input } from '@angular/core';
+import { Component, OnInit, OnDestroy, ElementRef, ViewChild, AfterViewChecked, input, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -25,22 +25,23 @@ function fmtTime(ts: number): string {
   styleUrl: 'sensors-page.component.scss',
 })
 export class SensorFeedCardComponent implements AfterViewChecked {
-  @Input({ required: true }) title!: string;
-  @Input({ required: true }) icon!: string;
-  @Input({ required: true }) meta!: string;
-  @Input({ required: true }) emptyMessage!: string;
-  @Input({ required: true }) themeClass!: string;
-  @Input({ required: true }) entryClass!: string;
-  @Input() entries: TimestampedEntry[] = [];
+  title = input.required<string>();
+  icon = input.required<string>();
+  meta = input.required<string>();
+  emptyMessage = input.required<string>();
+  themeClass = input.required<string>();
+  entryClass = input.required<string>();
+  entries = input<TimestampedEntry[]>([]);
 
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
   private previousCount = 0;
   fmt = fmtTime;
 
   ngAfterViewChecked() {
-    if (this.entries.length !== this.previousCount) {
+    const currentLength = this.entries().length;
+    if (currentLength !== this.previousCount) {
       this.scrollToBottom();
-      this.previousCount = this.entries.length;
+      this.previousCount = currentLength;
     }
   }
 
@@ -59,9 +60,11 @@ export class SensorFeedCardComponent implements AfterViewChecked {
   styleUrl: 'sensors-page.component.scss',
 })
 export class SensorsPageComponent implements OnInit, OnDestroy {
-  visionLog: TimestampedEntry[] = [];
-  spokenLog: TimestampedEntry[] = [];
-  audioLog:  TimestampedEntry[] = [];
+  visionLog = signal<TimestampedEntry[]>([]);
+  spokenLog = signal<TimestampedEntry[]>([]);
+  audioLog  = signal<TimestampedEntry[]>([]);
+
+  totalEntries = computed(() => this.visionLog().length + this.spokenLog().length + this.audioLog().length);
 
   private subs = new Subscription();
   private prevVisionCount = 0;
@@ -69,28 +72,24 @@ export class SensorsPageComponent implements OnInit, OnDestroy {
 
   constructor(private directorService: DirectorService) {}
 
-  get totalEntries(): number {
-    return this.visionLog.length + this.spokenLog.length + this.audioLog.length;
-  }
-
   ngOnInit(): void {
     this.subs.add(this.directorService.visionLog$.subscribe(log => {
-      this.visionLog = this.processLog(log, this.visionLog, this.prevVisionCount);
+      this.visionLog.update(current => this.processLog(log, current, this.prevVisionCount));
       this.prevVisionCount = log.length;
     }));
 
     this.subs.add(this.directorService.spokenLog$.subscribe(log => {
-      this.spokenLog = this.processLog(log, this.spokenLog, this.prevSpokenCount);
+      this.spokenLog.update(current => this.processLog(log, current, this.prevSpokenCount));
       this.prevSpokenCount = log.length;
     }));
 
     this.subs.add(this.directorService.audioLog$.subscribe((log: AudioLogEntry[]) => {
-      this.audioLog = log.map(entry => ({
+      this.audioLog.set(log.map(entry => ({
         text: entry.text,
         ts: entry.timestamp ?? Date.now(),
         isPartial: entry.isPartial,
         sessionId: entry.sessionId,
-      }));
+      })));
     }));
   }
 
