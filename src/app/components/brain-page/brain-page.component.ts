@@ -6,7 +6,7 @@ import { DirectorService } from '../../shared/services/director.service';
 import { DirectorState } from '../../shared/interfaces/director.interfaces';
 import { MetricsPanelComponent } from '../panels/metrics-panel/metrics-panel.component';
 import { InterestGraphComponent } from '../panels/interest-graph/interest-graph.component';
-import { UserPanelComponent } from '../panels/user-panel/user-panel.component';
+import { BasePanelComponent } from '../panels/base-panel/base-panel.component';
 
 @Component({
   selector: 'app-brain-page',
@@ -16,54 +16,10 @@ import { UserPanelComponent } from '../panels/user-panel/user-panel.component';
     RouterLink,
     MetricsPanelComponent,
     InterestGraphComponent,
-    UserPanelComponent,
+    BasePanelComponent,
   ],
-  template: `
-    <div class="page">
-
-      <div class="page-header">
-        <div class="page-header-left">
-          <a routerLink="/" class="back-btn">← Dashboard</a>
-          <h1 class="page-title">
-            <span class="title-icon">🧠</span>
-            Brain
-          </h1>
-          <span class="live-badge" [class.live-badge--connected]="isConnected">
-            <span class="live-dot"></span>
-            {{ isConnected ? 'LIVE' : 'DISCONNECTED' }}
-          </span>
-        </div>
-      </div>
-
-      <div class="page-content">
-        <div class="page-grid page-grid-brain">
-          <!-- Left column: Metrics -->
-          <div class="page-col">
-            <app-metrics-panel
-              [adaptive]="directorState?.adaptive || null"
-              [flow]="directorState?.flow || 'Unknown'"
-              [intent]="directorState?.intent || 'Unknown'"
-              [prediction]="directorState?.prediction || 'Observing flow...'"
-            ></app-metrics-panel>
-          </div>
-
-          <!-- Middle column: Interest Graph -->
-          <div class="page-col">
-            <app-interest-graph
-              [scoreHistory]="scoreHistory"
-            ></app-interest-graph>
-          </div>
-
-          <!-- Right column: Active User + Memories -->
-          <div class="page-col">
-            <app-user-panel
-              [user]="directorState?.active_user || null"
-            ></app-user-panel>
-          </div>
-        </div>
-      </div>
-    </div>
-  `,
+  styleUrl: 'brain-page.component.scss',
+  templateUrl: 'brain-page.component.html',
 })
 export class BrainPageComponent implements OnInit, OnDestroy {
   directorState: DirectorState | null = null;

@@ -1,0 +1,74 @@
+ <div class="page">
+    <div class="page-header">
+        <div class="page-header-left">
+            <a routerLink="/" class="back-btn">← Dashboard</a>
+            <h1 class="page-title">
+            <span class="title-icon">🧠</span>
+            Brain
+            </h1>
+            <span class="live-badge" [class.live-badge--connected]="isConnected">
+            <span class="live-dot"></span>
+            {{ isConnected ? 'LIVE' : 'DISCONNECTED' }}
+            </span>
+        </div>
+    </div>
+
+    <div class="page-content">
+        <div class="page-grid page-grid-brain">
+            <!-- Left column: Metrics -->
+            <div class="page-col">
+            <app-metrics-panel
+                [adaptive]="directorState?.adaptive || null"
+                [flow]="directorState?.flow || 'Unknown'"
+                [intent]="directorState?.intent || 'Unknown'"
+                [prediction]="directorState?.prediction || 'Observing flow...'"
+            ></app-metrics-panel>
+            </div>
+
+            <!-- Middle column: Interest Graph -->
+            <div class="page-col">
+            <app-interest-graph
+                [scoreHistory]="scoreHistory"
+            ></app-interest-graph>
+            </div>
+
+            <!-- Right column: Active User + Memories -->
+            <div class="page-col">
+            <app-base-panel title="👤 Active User">
+                <div *ngIf="directorState?.active_user as user" class="user-card">
+                <div class="user-header">
+                    <h3>{{ user.username }}</h3>
+                    <span class="tier-badge">{{ user.relationship.tier }}</span>
+                </div>
+
+                <div class="user-field">
+                    <span class="user-label">Nickname:</span>
+                    <span class="user-value">{{ user.nickname }}</span>
+                </div>
+
+                <div class="user-field">
+                    <span class="user-label">Role:</span>
+                    <span class="user-value role" [ngClass]="user.role">{{ user.role }}</span>
+                </div>
+
+                <div class="affinity">
+                    <span class="user-label">Affinity</span>
+                    <div class="bar-bg bar-bg--sm">
+                    <div class="bar bar-purple" [style.width.%]="user.relationship.affinity"></div>
+                    </div>
+                </div>
+
+                <div class="facts" *ngIf="user.facts.length">
+                    <strong>Known Facts:</strong>
+                    <ul>
+                    <li *ngFor="let fact of user.facts.slice(-3)">{{ fact.content }}</li>
+                    </ul>
+                </div>
+                </div>
+
+                <p *ngIf="!directorState?.active_user" class="empty">No active user context.</p>
+            </app-base-panel>
+            </div>
+        </div>
+    </div>
+</div>
