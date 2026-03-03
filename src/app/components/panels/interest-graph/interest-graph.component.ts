@@ -1,24 +1,22 @@
 import { Component, Input, OnChanges, SimpleChanges, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, registerables } from 'chart.js';
+import { BasePanelComponent } from '../base-panel/base-panel.component';
 
 Chart.register(...registerables);
 
 @Component({
   selector: 'app-interest-graph',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BasePanelComponent],
   styleUrl: 'interest-graph.component.scss',
   template: `
-    <div class="panel">
-      <h2 class="panel-title">📈 Interest Graph</h2>
-      <div class="panel-content graph-content">
-        <div class="chart-container">
-          <canvas #chartCanvas></canvas>
-        </div>
-        <pre class="score-log">{{ logText }}</pre>
+    <app-base-panel title="📈 Interest Graph" contentClass="graph-content">
+      <div class="chart-container">
+        <canvas #chartCanvas></canvas>
       </div>
-    </div>
+      <pre class="score-log">{{ logText }}</pre>
+    </app-base-panel>
   `,
 })
 export class InterestGraphComponent implements AfterViewInit, OnChanges {

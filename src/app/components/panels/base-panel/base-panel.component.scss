@@ -1,0 +1,23 @@
+// Lay out the title bar so actions sit on the right
+.panel-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-title-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.panel-title-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+// Remove content padding when the consumer opts out
+.panel-content.no-padding {
+  padding: 0;
+}

@@ -1,14 +1,17 @@
+@use "../../../../styles/utilities" as *;
+
 :host {
   display: flex; flex-direction: column; flex: 1; min-height: 0;
 }
 
-.directive-panel {
+// Applied via panelClass="directive-panel" on <app-base-panel>
+:host ::ng-deep .directive-panel {
   background: linear-gradient(to bottom, var(--surface-4), var(--surface-3));
-  border-color: rgba(88,28,135,0.5);
+  border-color: rgba(88, 28, 135, 0.5);
 
   .panel-title {
     color: var(--accent-purple-pale);
-    border-bottom-color: rgba(88,28,135,0.3);
+    border-bottom-color: rgba(88, 28, 135, 0.3);
   }
 }
 
@@ -19,8 +22,8 @@
 
 .constraints-box {
   padding: 0.5rem;
-  background: rgba(127,29,29,0.2);
-  border: 1px solid rgba(127,29,29,0.5);
+  background: rgba(127, 29, 29, 0.2);
+  border: 1px solid rgba(127, 29, 29, 0.5);
   border-radius: var(--radius-sm);
   margin-top: 0.5rem;
 }

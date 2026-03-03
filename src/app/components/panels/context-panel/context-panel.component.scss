@@ -2,11 +2,13 @@
 
 :host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
+.ctx-scroll { display: flex; flex-direction: column; overflow-y: auto; height: 100%; }
+
 .log-item { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.5rem; white-space: pre-wrap; word-wrap: break-word; }
 
-.audio-item { 
+.audio-item {
   @include list-card(var(--nami-purple));
-  background: rgba(169,112,255,0.15); 
-  color: #e9d5ff; font-weight: 500; font-size: 0.75rem; 
+  background: rgba(169,112,255,0.15);
+  color: #e9d5ff; font-weight: 500; font-size: 0.75rem;
 }
 .audio-item.partial { animation: pulse 1s ease-in-out infinite; }

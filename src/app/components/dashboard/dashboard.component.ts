@@ -7,7 +7,7 @@ import { DirectorState, BotReply, Streamer, ChatMessage } from '../../shared/int
 
 // Child Components
 import { HeaderComponent } from '../header/header.component';
-import { DirectivesPanelComponent } from '../directives-panel/directives-panel.component';
+import { DirectivesPanelComponent } from '../panels/directives-panel/directives-panel.component';
 import { SummaryPanelComponent } from '../panels/summary-panel/summary-panel.component';
 import { SensoryPanelComponent } from '../panels/sensory-panel/sensory-panel.component';
 import { ChatPanelComponent } from '../panels/chat-panel/chat-panel.component';

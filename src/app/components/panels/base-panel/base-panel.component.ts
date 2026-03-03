@@ -11,7 +11,13 @@ import { CommonModule } from '@angular/common';
 export class BasePanelComponent {
   @Input({ required: true }) title!: string;
   @Input() icon?: string;
-  
-  // Useful if some panels (like a raw list or map) need their content to touch the edges
-  @Input() disableBodyPadding = false; 
+
+  /** Extra CSS class(es) applied to the root .panel div (e.g. 'directive-panel') */
+  @Input() panelClass?: string;
+
+  /** Extra CSS class(es) applied to .panel-content (e.g. 'graph-content') */
+  @Input() contentClass?: string;
+
+  /** Remove padding from the content area (useful for flush lists/charts) */
+  @Input() disableBodyPadding = false;
 }

@@ -1,16 +1,17 @@
 import { Component, Input, Output, EventEmitter, ElementRef, ViewChild, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BotReply } from '../../../shared/interfaces/director.interfaces';
+import { BasePanelComponent } from '../base-panel/base-panel.component';
 
 @Component({
   selector: 'app-chat-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BasePanelComponent],
   styleUrl: 'chat-panel.component.scss',
   template: `
-    <div class="panel">
-      <h2 class="panel-title">{{ title }}</h2>
-      <div class="panel-content" #scrollContainer>
+    <app-base-panel [title]="title">
+      <!-- Wrap content in a scroll container so AfterViewChecked can target it -->
+      <div #scrollContainer class="chat-scroll">
 
         <ng-container *ngIf="!isNamiPanel">
           <div
@@ -42,7 +43,7 @@ import { BotReply } from '../../../shared/interfaces/director.interfaces';
         </ng-container>
 
       </div>
-    </div>
+    </app-base-panel>
   `,
 })
 export class ChatPanelComponent implements AfterViewChecked {

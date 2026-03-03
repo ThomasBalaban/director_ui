@@ -1,103 +1,101 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AdaptiveState } from '../../../shared/interfaces/director.interfaces';
+import { BasePanelComponent } from '../base-panel/base-panel.component';
 
 @Component({
   selector: 'app-metrics-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BasePanelComponent],
   styleUrl: 'metrics-panel.component.scss',
   template: `
-    <div class="panel">
-      <h2 class="panel-title metrics-title">
-        <span>🎛️ Brain Metrics</span>
-        <span class="state-label" [ngClass]="getStateClass()">
-          {{ adaptive?.state || 'Initializing' }}
-        </span>
-      </h2>
-      <div class="panel-content">
+    <app-base-panel title="🎛️ Brain Metrics">
 
-        <!-- Social Battery -->
+      <!-- State badge sits in the right side of the title bar -->
+      <span panel-actions class="state-label" [ngClass]="getStateClass()">
+        {{ adaptive?.state || 'Initializing' }}
+      </span>
+
+      <!-- Social Battery -->
+      <div class="metric">
+        <div class="metric-header">
+          <span>Social Battery</span>
+          <span>{{ adaptive?.social_battery?.percent || 100 }}%</span>
+        </div>
+        <div class="bar-bg bar-bg--md">
+          <div
+            class="bar"
+            [ngClass]="getBatteryClass()"
+            [style.width.%]="adaptive?.social_battery?.percent || 100"
+          ></div>
+        </div>
+      </div>
+
+      <!-- Attention Threshold -->
+      <div class="metric section-divider">
+        <div class="metric-header">
+          <span>Attention Threshold</span>
+          <span>{{ (adaptive?.threshold || 0.9).toFixed(2) }}</span>
+        </div>
+        <div class="bar-bg bar-bg--md">
+          <div
+            class="bar bar-blue"
+            [style.width.%]="(adaptive?.threshold || 0.9) * 100"
+          ></div>
+        </div>
+      </div>
+
+      <!-- Velocity & Hype -->
+      <div class="metrics-grid">
         <div class="metric">
           <div class="metric-header">
-            <span>Social Battery</span>
-            <span>{{ adaptive?.social_battery?.percent || 100 }}%</span>
+            <span>Velocity</span>
+            <span>{{ (adaptive?.chat_velocity || 0).toFixed(1) }}/m</span>
           </div>
           <div class="bar-bg bar-bg--md">
             <div
-              class="bar"
-              [ngClass]="getBatteryClass()"
-              [style.width.%]="adaptive?.social_battery?.percent || 100"
+              class="bar bar-purple"
+              [style.width.%]="Math.min((adaptive?.chat_velocity || 0) / 40 * 100, 100)"
             ></div>
           </div>
         </div>
 
-        <!-- Attention Threshold -->
-        <div class="metric section-divider">
+        <div class="metric">
           <div class="metric-header">
-            <span>Attention Threshold</span>
-            <span>{{ (adaptive?.threshold || 0.9).toFixed(2) }}</span>
+            <span>Hype</span>
+            <span>{{ (adaptive?.energy || 0).toFixed(2) }}</span>
           </div>
           <div class="bar-bg bar-bg--md">
             <div
-              class="bar bar-blue"
-              [style.width.%]="(adaptive?.threshold || 0.9) * 100"
+              class="bar bar-yellow"
+              [style.width.%]="(adaptive?.energy || 0) * 100"
             ></div>
           </div>
         </div>
-
-        <!-- Velocity & Hype -->
-        <div class="metrics-grid">
-          <div class="metric">
-            <div class="metric-header">
-              <span>Velocity</span>
-              <span>{{ (adaptive?.chat_velocity || 0).toFixed(1) }}/m</span>
-            </div>
-            <div class="bar-bg bar-bg--md">
-              <div
-                class="bar bar-purple"
-                [style.width.%]="Math.min((adaptive?.chat_velocity || 0) / 40 * 100, 100)"
-              ></div>
-            </div>
-          </div>
-
-          <div class="metric">
-            <div class="metric-header">
-              <span>Hype</span>
-              <span>{{ (adaptive?.energy || 0).toFixed(2) }}</span>
-            </div>
-            <div class="bar-bg bar-bg--md">
-              <div
-                class="bar bar-yellow"
-                [style.width.%]="(adaptive?.energy || 0) * 100"
-              ></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Flow Dynamics -->
-        <div class="section-divider">
-          <h3 class="sub-heading">🌊 Flow Dynamics</h3>
-          <div class="dynamics-grid">
-            <div>
-              <div class="label-caps">Current Flow</div>
-              <div class="value value--flow">{{ flow }}</div>
-            </div>
-            <div>
-              <div class="label-caps">User Intent</div>
-              <div class="value value--intent">{{ intent }}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Anticipation -->
-        <div class="section-divider">
-          <h3 class="sub-heading">🔮 Anticipation</h3>
-          <p class="prediction-text">{{ prediction }}</p>
-        </div>
-
       </div>
-    </div>
+
+      <!-- Flow Dynamics -->
+      <div class="section-divider">
+        <h3 class="sub-heading">🌊 Flow Dynamics</h3>
+        <div class="dynamics-grid">
+          <div>
+            <div class="label-caps">Current Flow</div>
+            <div class="value value--flow">{{ flow }}</div>
+          </div>
+          <div>
+            <div class="label-caps">User Intent</div>
+            <div class="value value--intent">{{ intent }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Anticipation -->
+      <div class="section-divider">
+        <h3 class="sub-heading">🔮 Anticipation</h3>
+        <p class="prediction-text">{{ prediction }}</p>
+      </div>
+
+    </app-base-panel>
   `,
 })
 export class MetricsPanelComponent {

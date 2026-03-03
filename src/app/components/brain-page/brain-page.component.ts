@@ -5,7 +5,7 @@ import { Subscription } from 'rxjs';
 import { DirectorService } from '../../shared/services/director.service';
 import { DirectorState } from '../../shared/interfaces/director.interfaces';
 import { MetricsPanelComponent } from '../panels/metrics-panel/metrics-panel.component';
-import { InterestGraphComponent } from '../interest-graph/interest-graph.component';
+import { InterestGraphComponent } from '../panels/interest-graph/interest-graph.component';
 import { UserPanelComponent } from '../panels/user-panel/user-panel.component';
 
 @Component({

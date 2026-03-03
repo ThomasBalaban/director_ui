@@ -1,20 +1,24 @@
-<div class="panel-wrapper">
-    
-    <div class="panel-header">
-    <div class="panel-header-left">
-        @if (icon) {
-        <span class="panel-icon">{{ icon }}</span>
-        }
-        <h2 class="panel-title">{{ title }}</h2>
-    </div>
-    
-    <div class="panel-header-right">
-        <ng-content select="[panel-actions]"></ng-content>
-    </div>
-    </div>
+<div class="panel" [ngClass]="panelClass">
 
-    <div class="panel-body" [class.no-padding]="disableBodyPadding">
-    <ng-content></ng-content>
+  <div class="panel-title">
+    <div class="panel-title-left">
+      @if (icon) {
+        <span class="panel-icon">{{ icon }}</span>
+      }
+      <span>{{ title }}</span>
     </div>
-    
+    <div class="panel-title-right">
+      <!-- Optional: project buttons/badges into the right side of the title bar -->
+      <ng-content select="[panel-actions]"></ng-content>
+    </div>
+  </div>
+
+  <div
+    class="panel-content"
+    [ngClass]="contentClass"
+    [class.no-padding]="disableBodyPadding"
+  >
+    <ng-content></ng-content>
+  </div>
+
 </div>

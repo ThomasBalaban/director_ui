@@ -1,15 +1,15 @@
 import { Component, Input, ElementRef, ViewChild, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { BasePanelComponent } from '../base-panel/base-panel.component';
 
 @Component({
   selector: 'app-context-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BasePanelComponent],
   styleUrl: 'context-panel.component.scss',
   template: `
-    <div class="panel">
-      <h2 class="panel-title">{{ title }}</h2>
-      <div class="panel-content" #scrollContainer>
+    <app-base-panel [title]="title">
+      <div #scrollContainer class="ctx-scroll">
 
         <ng-container *ngIf="!isAudioPanel">
           <div *ngFor="let log of logs" class="log-item">{{ log }}</div>
@@ -28,7 +28,7 @@ import { CommonModule } from '@angular/common';
         </ng-container>
 
       </div>
-    </div>
+    </app-base-panel>
   `,
 })
 export class ContextPanelComponent implements AfterViewChecked {
