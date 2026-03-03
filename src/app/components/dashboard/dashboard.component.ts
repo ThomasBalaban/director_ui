@@ -2,21 +2,18 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { DirectorService, ChatMessage, AudioLogEntry, ScoreEntry } from '../../shared/services/dashboard.service';
-import { DirectorState, BotReply, Streamer } from '../../shared/interfaces/director.interfaces';
+import { DirectorService } from '../../shared/services/director.service';
+import { DirectorState, BotReply, Streamer, ChatMessage } from '../../shared/interfaces/director.interfaces';
 
 // Child Components
 import { HeaderComponent } from '../header/header.component';
 import { DirectivesPanelComponent } from '../directives-panel/directives-panel.component';
 import { SummaryPanelComponent } from '../summary-panel/summary-panel.component';
-import { InterestGraphComponent } from '../interest-graph/interest-graph.component';
-import { SensoryPanelComponent } from '../sensory-panel/sensory-panel.component';  // ← classified output
+import { SensoryPanelComponent } from '../sensory-panel/sensory-panel.component';
 import { ChatPanelComponent } from '../chat-panel/chat-panel.component';
-import { MetricsPanelComponent } from '../metrics-panel/metrics-panel.component';
-import { MemoryPanelComponent } from '../memory-panel/memory-panel.component';
-import { UserPanelComponent } from '../user-panel/user-panel.component';
 import { ContextDrawerComponent } from '../context-drawer/context-drawer.component';
 import { EventInterpreterPanelComponent } from '../event-interpreter-panel/event-interpreter-panel.component';
+import { MemoryPanelComponent } from '../memory-panel/memory-panel.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -27,14 +24,11 @@ import { EventInterpreterPanelComponent } from '../event-interpreter-panel/event
     HeaderComponent,
     DirectivesPanelComponent,
     SummaryPanelComponent,
-    InterestGraphComponent,
-    SensoryPanelComponent, 
+    SensoryPanelComponent,
     EventInterpreterPanelComponent,
     ChatPanelComponent,
-    MetricsPanelComponent,
+    ContextDrawerComponent,
     MemoryPanelComponent,
-    UserPanelComponent,
-    ContextDrawerComponent
   ],
   templateUrl: './dashboard.component.html',
   styles: [`
@@ -49,7 +43,7 @@ import { EventInterpreterPanelComponent } from '../event-interpreter-panel/event
 
     .main-grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 1.5rem;
       flex: 1;
       min-height: 0;
@@ -79,12 +73,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   isConnected = false;
   streamers: Streamer[] = [];
 
-  visionLog:  string[] = [];
-  spokenLog:  string[] = [];
-  audioLog:   AudioLogEntry[] = [];
   chatMessages: ChatMessage[] = [];
   namiReplies:  BotReply[] = [];
-  scoreHistory: ScoreEntry[] = [];
 
   drawerOpen = false;
   drawerData: BotReply | null = null;
@@ -125,12 +115,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       })
     );
 
-    this.subscriptions.add(this.directorService.visionLog$.subscribe(log => this.visionLog = log));
-    this.subscriptions.add(this.directorService.spokenLog$.subscribe(log => this.spokenLog = log));
-    this.subscriptions.add(this.directorService.audioLog$.subscribe(log => this.audioLog = log));
     this.subscriptions.add(this.directorService.chatMessages$.subscribe(msgs => this.chatMessages = msgs));
     this.subscriptions.add(this.directorService.namiReplies$.subscribe(replies => this.namiReplies = replies));
-    this.subscriptions.add(this.directorService.scoreHistory$.subscribe(history => this.scoreHistory = history));
 
     this.subscriptions.add(
       this.directorService.pendingAiContext$.subscribe(ctx => {

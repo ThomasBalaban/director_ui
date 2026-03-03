@@ -20,63 +20,43 @@
   <!-- Main Grid -->
   <div class="main-grid">
 
-     <div class="column">
+    <div class="column">
       <app-event-interpreter-panel></app-event-interpreter-panel>
     </div>
-    
-    <!-- Column 1: Directives, Summary, Graph -->
-    <div class="column">
-      <app-directives-panel
-        [directive]="directorState?.directive || null"
-      ></app-directives-panel>
-      
-      <app-summary-panel
-        [summary]="directorState?.summary || 'Waiting for summary...'"
-        [rawContext]="directorState?.raw_context || ''"
-      ></app-summary-panel>
-      
-      <app-interest-graph
-        [scoreHistory]="scoreHistory"
-      ></app-interest-graph>
-    </div>
-    
-    <!-- Column 2: Sensory Context (classified events from sensory_data) -->
+
     <div class="column">
       <app-sensory-panel></app-sensory-panel>
     </div>
-    
-    <!-- Column 3: Chat -->
+
     <div class="column">
       <app-chat-panel
-        title="💬 Chat"
+        title="&#128172; Chat"
         [messages]="chatMessages"
       ></app-chat-panel>
-      
+
       <app-chat-panel
-        title="🤖 Nami's Brain"
+        title="&#129302; Nami's Brain"
         [namiReplies]="namiReplies"
         [isNamiPanel]="true"
         (openDrawer)="onOpenDrawer($event)"
       ></app-chat-panel>
     </div>
-    
-    <!-- Column 4: Metrics, User, Memory -->
+
     <div class="column">
-      <app-metrics-panel
-        [adaptive]="directorState?.adaptive || null"
-        [flow]="directorState?.flow || 'Unknown'"
-        [intent]="directorState?.intent || 'Unknown'"
-        [prediction]="directorState?.prediction || 'Observing flow...'"
-      ></app-metrics-panel>
-      
-      <app-user-panel
-        [user]="directorState?.active_user || null"
-      ></app-user-panel>
-      
+      <app-directives-panel
+        [directive]="directorState?.directive || null"
+      ></app-directives-panel>
+
+      <app-summary-panel
+        [summary]="directorState?.summary || 'Waiting for summary...'"
+        [rawContext]="directorState?.raw_context || ''"
+      ></app-summary-panel>
+
       <app-memory-panel
-        [memories]="directorState?.memories || []"
-      ></app-memory-panel>
+            [memories]="directorState?.memories || []"
+          ></app-memory-panel>
     </div>
+
   </div>
 </div>
 
