@@ -1,5 +1,9 @@
+:host {
+  display: flex; flex-direction: column; flex: 1; min-height: 0;
+}
+
 .directive-panel {
-  background: linear-gradient(to bottom, var(--surface-4), #202020);
+  background: linear-gradient(to bottom, var(--surface-4), var(--surface-3));
   border-color: rgba(88,28,135,0.5);
 
   .panel-title {
@@ -8,10 +12,10 @@
   }
 }
 
-.directive-panel .field     { margin-bottom: 0.75rem; }
-.directive-panel .objective { font-size: 1.125rem; font-weight: bold; color: var(--text-white); line-height: 1.25; }
-.directive-panel .tone      { font-size: 0.875rem; color: var(--accent-purple-pale); }
-.directive-panel .action    { font-size: 0.875rem; color: #d1d5db; font-style: italic; }
+.field     { margin-bottom: 0.75rem; }
+.objective { font-size: 1.125rem; font-weight: bold; color: var(--text-white); line-height: 1.25; }
+.tone      { font-size: 0.875rem; color: var(--accent-purple-pale); }
+.action    { font-size: 0.875rem; color: var(--text-dim); font-style: italic; }
 
 .constraints-box {
   padding: 0.5rem;

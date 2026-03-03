@@ -6,6 +6,7 @@ import { Directive } from '../../shared/interfaces/director.interfaces';
   selector: 'app-directives-panel',
   standalone: true,
   imports: [CommonModule],
+  styleUrl: 'directives-panel.component.scss',
   template: `
     <div class="panel directive-panel">
       <h2 class="panel-title">⚡ Director's Orders</h2>

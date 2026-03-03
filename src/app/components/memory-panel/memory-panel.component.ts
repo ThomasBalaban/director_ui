@@ -6,6 +6,7 @@ import { Memory } from '../../shared/interfaces/director.interfaces';
   selector: 'app-memory-panel',
   standalone: true,
   imports: [CommonModule],
+  styleUrl: 'memory-panel.component.scss',
   template: `
     <div class="panel">
       <h2 class="panel-title">💾 Memories</h2>

@@ -1,3 +1,17 @@
+@mixin flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+@mixin list-card($border-color, $border-width: 3px) {
+  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+  background: var(--surface-4);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.5rem;
+  border-left: $border-width solid $border-color;
+}
+
 .empty {
   color: var(--text-dim);
   font-style: italic;

@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
   selector: 'app-summary-panel',
   standalone: true,
   imports: [CommonModule],
+  styleUrl: 'summary-panel.component.scss',
   template: `
     <div class="panel">
       <h2 class="panel-title">🧠 Situation Summary</h2>

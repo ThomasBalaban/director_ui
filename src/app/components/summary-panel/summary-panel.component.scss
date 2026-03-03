@@ -1,3 +1,7 @@
+:host {
+  display: flex; flex-direction: column; flex: 1; min-height: 0;
+}
+
 .summary-text {
   font-size: 1rem;
   font-weight: 500;
@@ -7,7 +11,7 @@
 
 .raw-context {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--text-dim);
   margin-top: 1rem;
   border-top: 1px dashed var(--border);
   padding-top: 0.5rem;

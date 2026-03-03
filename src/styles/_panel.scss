@@ -1,12 +1,11 @@
+@use "utilities" as *;
+
 .panel {
   background-color: var(--surface-4);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  display: flex;
-  flex-direction: column;
-  flex: 1;      
-  min-height: 0;  
-  overflow: hidden;
+  display: flex; flex-direction: column; flex: 1;      
+  min-height: 0; overflow: hidden;
 }
 
 .panel-title {
@@ -18,27 +17,21 @@
   flex-shrink: 0;
 }
 
-.panel-content {
-  padding: 1.25rem;
-  overflow-y: auto;
-  flex: 1;
-  min-height: 0;
+.panel-content { padding: 1.25rem; overflow-y: auto; flex: 1; min-height: 0; }
+
+// ── context-panel ──
+.log-item { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.5rem; white-space: pre-wrap; word-wrap: break-word; }
+
+.audio-item { 
+  @include list-card(var(--nami-purple));
+  background: rgba(169,112,255,0.15); 
+  color: #e9d5ff; font-weight: 500; font-size: 0.75rem; 
 }
-
-// context-panel
-app-context-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-
-.log-item { font-size: 0.75rem; color: #d1d5db; margin-bottom: 0.5rem; white-space: pre-wrap; word-wrap: break-word; }
-
-.audio-item { background: rgba(169,112,255,0.15); border-left: 3px solid var(--nami-purple); padding: 0.25rem 0.5rem; border-radius: var(--radius-sm); margin-bottom: 0.5rem; color: #e9d5ff; font-weight: 500; font-size: 0.75rem; }
 .audio-item.partial { animation: pulse 1s ease-in-out infinite; }
 
-// user-panel
-app-user-panel { display: block; }
-
-.user-card { background: #202020; padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border); }
-
-.user-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+// ── user-panel ──
+.user-card { background: var(--surface-3); padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border); }
+.user-header { @include flex-between; margin-bottom: 0.5rem; }
 .user-header h3 { font-size: 0.875rem; font-weight: 700; color: var(--text-white); margin: 0; }
 
 .tier-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: var(--border); color: #bbb; }
@@ -48,16 +41,14 @@ app-user-panel { display: block; }
 .bar-bg--sm { height: 4px; background: #374151; }
 .affinity   { margin-top: 0.5rem; }
 
-.user-facts { margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border); font-size: 0.75rem; color: #d1d5db; }
+.user-facts { margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--text-dim); }
 .user-facts strong { display: block; margin-bottom: 0.25rem; }
 .user-facts ul { list-style: disc; padding-left: 1rem; margin: 0; color: var(--text-muted); }
 .user-facts li { margin-bottom: 0.125rem; }
 
-// metrics-panel
-app-metrics-panel { display: block; }
-
-.metrics-title { display: flex; justify-content: space-between; align-items: center; }
-.state-label { font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: var(--radius-sm); background: #374151; color: #d1d5db; }
+// ── metrics-panel ──
+.metrics-title { @include flex-between; }
+.state-label { font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: var(--radius-sm); background: #374151; color: var(--text-dim); }
 .state-label.chaos { background: #7f1d1d; color: var(--accent-red-pale); }
 .state-label.dead  { background: #1e3a8a; color: #bfdbfe; }
 .metric        { margin-bottom: 1rem; }
@@ -66,9 +57,7 @@ app-metrics-panel { display: block; }
 .dynamics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .prediction-text { font-size: 0.875rem; color: var(--nami-teal); font-style: italic; line-height: 1.5; margin: 0; }
 
-// interest-graph
-app-interest-graph { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-
+// ── interest-graph ──
 .graph-content    { display: flex; flex-direction: column; }
 .chart-container  { flex: 1; position: relative; min-height: 120px; }
 .chart-container canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
