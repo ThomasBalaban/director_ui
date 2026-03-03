@@ -8,6 +8,7 @@ Chart.register(...registerables);
   selector: 'app-interest-graph',
   standalone: true,
   imports: [CommonModule],
+  styleUrl: 'interest-graph.component.scss',
   template: `
     <div class="panel">
       <h2 class="panel-title">📈 Interest Graph</h2>

@@ -6,6 +6,7 @@ import { BotReply } from '../../shared/interfaces/director.interfaces';
   selector: 'app-chat-panel',
   standalone: true,
   imports: [CommonModule],
+  styleUrl: 'chat-panel.component.scss',
   template: `
     <div class="panel">
       <h2 class="panel-title">{{ title }}</h2>

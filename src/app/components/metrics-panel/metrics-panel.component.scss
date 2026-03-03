@@ -1,0 +1,13 @@
+@use "../../../styles/utilities" as *;
+
+:host { display: block; }
+
+.metrics-title { @include flex-between; }
+.state-label { font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: var(--radius-sm); background: #374151; color: var(--text-dim); }
+.state-label.chaos { background: #7f1d1d; color: var(--accent-red-pale); }
+.state-label.dead  { background: #1e3a8a; color: #bfdbfe; }
+.metric        { margin-bottom: 1rem; }
+.bar-bg--md    { height: 0.5rem; background: #1f2937; }
+.metrics-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.dynamics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.prediction-text { font-size: 0.875rem; color: var(--nami-teal); font-style: italic; line-height: 1.5; margin: 0; }

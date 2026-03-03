@@ -6,6 +6,7 @@ import { UserProfile } from '../../shared/interfaces/director.interfaces';
   selector: 'app-user-panel',
   standalone: true,
   imports: [CommonModule],
+  styleUrl: 'user-panel.component.scss',
   template: `
     <div class="panel">
       <h2 class="panel-title">👤 Active User</h2>

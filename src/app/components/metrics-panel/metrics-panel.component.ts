@@ -6,6 +6,7 @@ import { AdaptiveState } from '../../shared/interfaces/director.interfaces';
   selector: 'app-metrics-panel',
   standalone: true,
   imports: [CommonModule],
+  styleUrl: 'metrics-panel.component.scss',
   template: `
     <div class="panel">
       <h2 class="panel-title metrics-title">

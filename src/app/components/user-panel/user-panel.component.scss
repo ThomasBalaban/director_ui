@@ -1,0 +1,19 @@
+@use "../../../styles/utilities" as *;
+
+:host { display: block; }
+
+.user-card { background: var(--surface-3); padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border); }
+.user-header { @include flex-between; margin-bottom: 0.5rem; }
+.user-header h3 { font-size: 0.875rem; font-weight: 700; color: var(--text-white); margin: 0; }
+
+.tier-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: var(--border); color: #bbb; }
+.user-field { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; }
+.user-label { font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem; }
+.user-value { color: var(--text-white); }
+.bar-bg--sm { height: 4px; background: #374151; }
+.affinity   { margin-top: 0.5rem; }
+
+.user-facts { margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--text-dim); }
+.user-facts strong { display: block; margin-bottom: 0.25rem; }
+.user-facts ul { list-style: disc; padding-left: 1rem; margin: 0; color: var(--text-muted); }
+.user-facts li { margin-bottom: 0.125rem; }

@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
   selector: 'app-context-panel',
   standalone: true,
   imports: [CommonModule],
+  styleUrl: 'context-panel.component.scss',
   template: `
     <div class="panel">
       <h2 class="panel-title">{{ title }}</h2>
