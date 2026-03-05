@@ -49,6 +49,15 @@ def conda_python(env_name: str) -> str:
 
 
 SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
+    "hub": {
+        "label":        "Central Hub",
+        "description":  "Socket.IO relay hub — all services connect through here",
+        "cmd":          [sys.executable, os.path.join(PARENT_DIR, "hub_service", "main.py")],
+        "cwd":          os.path.join(PARENT_DIR, "hub_service"),
+        "port":         8002,
+        "health_check": "tcp",
+        "managed":      True,
+    },
     "prompt_service": {
         "label":        "Prompt Service",
         "description":  "Speech gate — controls when Nami speaks",
@@ -140,15 +149,6 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "cmd":          [conda_python("nami"), "-m", "nami.main"],
         "cwd":          PARENT_DIR,
         "port":         8000,
-        "health_check": "tcp",
-        "managed":      True,
-    },
-    "hub": {
-        "label":        "Central Hub",
-        "description":  "Socket.IO relay hub — all services connect through here",
-        "cmd":          [sys.executable, os.path.join(PARENT_DIR, "hub_service", "main.py")],
-        "cwd":          os.path.join(PARENT_DIR, "hub_service"),
-        "port":         8002,
         "health_check": "tcp",
         "managed":      True,
     },
