@@ -62,25 +62,25 @@ export class SensorFeedCardComponent implements AfterViewChecked {
 export class SensorsPageComponent implements OnInit, OnDestroy {
   visionLog = signal<TimestampedEntry[]>([]);
   spokenLog = signal<TimestampedEntry[]>([]);
-  audioLog  = signal<TimestampedEntry[]>([]);
+  audioLog = signal<TimestampedEntry[]>([]);
 
   totalEntries = computed(() => this.visionLog().length + this.spokenLog().length + this.audioLog().length);
 
   private subs = new Subscription();
-  private prevVisionCount = 0;
-  private prevSpokenCount = 0;
+  private prevVisionLast = '';
+  private prevSpokenLast = '';
 
-  constructor(private directorService: DirectorService) {}
+  constructor(private directorService: DirectorService) { }
 
   ngOnInit(): void {
     this.subs.add(this.directorService.visionLog$.subscribe(log => {
-      this.visionLog.update(current => this.processLog(log, current, this.prevVisionCount));
-      this.prevVisionCount = log.length;
+      this.visionLog.update(current => this.processLog(log, current, this.prevVisionLast));
+      this.prevVisionLast = log[log.length - 1] ?? '';
     }));
 
     this.subs.add(this.directorService.spokenLog$.subscribe(log => {
-      this.spokenLog.update(current => this.processLog(log, current, this.prevSpokenCount));
-      this.prevSpokenCount = log.length;
+      this.spokenLog.update(current => this.processLog(log, current, this.prevSpokenLast));
+      this.prevSpokenLast = log[log.length - 1] ?? '';
     }));
 
     this.subs.add(this.directorService.audioLog$.subscribe((log: AudioLogEntry[]) => {
@@ -93,15 +93,25 @@ export class SensorsPageComponent implements OnInit, OnDestroy {
     }));
   }
 
-  private processLog(newLog: string[], currentLog: TimestampedEntry[], prevCount: number): TimestampedEntry[] {
-    if (newLog.length > prevCount) {
-      const newEntries = newLog.slice(prevCount).map(text => ({ text, ts: Date.now() }));
-      return [...currentLog, ...newEntries];
-    } else if (newLog.length < prevCount) {
-      return newLog.map(text => ({ text, ts: Date.now() }));
-    }
-    return currentLog;
+  private processLog(newLog: string[], currentLog: TimestampedEntry[], prevLast: string): TimestampedEntry[] {
+  if (!newLog.length) return currentLog;
+
+  const newLast = newLog[newLog.length - 1];
+
+  // Nothing new
+  if (newLast === prevLast) return currentLog;
+
+  // Find where new entries begin by locating the previous tail in the incoming log
+  const prevIdx = prevLast ? newLog.lastIndexOf(prevLast) : -1;
+  if (prevIdx >= 0 && prevIdx < newLog.length - 1) {
+    // One or more new entries appended after the previous tail
+    const newEntries = newLog.slice(prevIdx + 1).map(text => ({ text, ts: Date.now() }));
+    return [...currentLog, ...newEntries];
   }
+
+  // Previous tail not found — log was reset or fully rotated; just append the latest
+  return [...currentLog, { text: newLast, ts: Date.now() }];
+}
 
   ngOnDestroy(): void {
     this.subs.unsubscribe();
