@@ -4,13 +4,12 @@ import { io, Socket } from 'socket.io-client';
 import { environment } from '../../../environments/environment';
 import {
   DirectorState, ScoredEvent, TwitchMessage, BotReply, AiContextSuggestion,
-  Streamer, ChatMessage, AudioLogEntry, ScoreEntry,
-  ClassifiedEvent, AiContextPacket
+  Streamer, ChatMessage, AudioLogEntry, ScoreEntry, ClassifiedEvent, AiContextPacket
 } from '../interfaces/director.interfaces';
 
-const MAX_LOG             = 150;
+const MAX_LOG = 150;
 const MAX_SENSORY_HISTORY = 150;
-const MAX_EVENT_HISTORY   = 150;
+const MAX_EVENT_HISTORY = 150;
 
 export interface ContinuousContext {
   type: string;
@@ -33,51 +32,51 @@ export class DirectorService implements OnDestroy {
 
   // === Connection ===
   private connectionStatusSubject = new BehaviorSubject<boolean>(false);
-  public  connectionStatus$       = this.connectionStatusSubject.asObservable();
+  public connectionStatus$ = this.connectionStatusSubject.asObservable();
 
   // === Director Core ===
-  private directorStateSubject    = new BehaviorSubject<DirectorState | null>(null);
-  private visionLogSubject        = new BehaviorSubject<string[]>([]);
-  private spokenLogSubject        = new BehaviorSubject<string[]>([]);
-  private audioLogSubject         = new BehaviorSubject<AudioLogEntry[]>([]);
-  private chatMessagesSubject     = new BehaviorSubject<ChatMessage[]>([]);
-  private namiRepliesSubject      = new BehaviorSubject<BotReply[]>([]);
-  private scoreHistorySubject     = new BehaviorSubject<ScoreEntry[]>([]);
+  private directorStateSubject = new BehaviorSubject<DirectorState | null>(null);
+  private visionLogSubject = new BehaviorSubject<string[]>([]);
+  private spokenLogSubject = new BehaviorSubject<string[]>([]);
+  private audioLogSubject = new BehaviorSubject<AudioLogEntry[]>([]);
+  private chatMessagesSubject = new BehaviorSubject<ChatMessage[]>([]);
+  private namiRepliesSubject = new BehaviorSubject<BotReply[]>([]);
+  private scoreHistorySubject = new BehaviorSubject<ScoreEntry[]>([]);
   private pendingAiContextSubject = new BehaviorSubject<string | null>(null);
 
-  public directorState$    = this.directorStateSubject.asObservable();
-  public visionLog$        = this.visionLogSubject.asObservable();
-  public spokenLog$        = this.spokenLogSubject.asObservable();
-  public audioLog$         = this.audioLogSubject.asObservable();
-  public chatMessages$     = this.chatMessagesSubject.asObservable();
-  public namiReplies$      = this.namiRepliesSubject.asObservable();
-  public scoreHistory$     = this.scoreHistorySubject.asObservable();
+  public directorState$ = this.directorStateSubject.asObservable();
+  public visionLog$ = this.visionLogSubject.asObservable();
+  public spokenLog$ = this.spokenLogSubject.asObservable();
+  public audioLog$ = this.audioLogSubject.asObservable();
+  public chatMessages$ = this.chatMessagesSubject.asObservable();
+  public namiReplies$ = this.namiRepliesSubject.asObservable();
+  public scoreHistory$ = this.scoreHistorySubject.asObservable();
   public pendingAiContext$ = this.pendingAiContextSubject.asObservable();
 
   // === Event Interpreter Service ===
   private classifiedEventsSubject = new BehaviorSubject<ClassifiedEvent[]>([]);
-  private latestEventSubject      = new BehaviorSubject<ClassifiedEvent | null>(null);
-  private latestAiContextSubject  = new BehaviorSubject<AiContextPacket | null>(null);
+  private latestEventSubject = new BehaviorSubject<ClassifiedEvent | null>(null);
+  private latestAiContextSubject = new BehaviorSubject<AiContextPacket | null>(null);
 
-  public classifiedEvents$      = this.classifiedEventsSubject.asObservable();
+  public classifiedEvents$ = this.classifiedEventsSubject.asObservable();
   public latestClassifiedEvent$ = this.latestEventSubject.asObservable();
-  public latestAiContext$       = this.latestAiContextSubject.asObservable();
+  public latestAiContext$ = this.latestAiContextSubject.asObservable();
 
   // === Sensory Aggregator pipeline ===
-  private sensoryHistorySubject   = new BehaviorSubject<HistoryEntry[]>([]);
-  private currentSensorySubject   = new BehaviorSubject<HistoryEntry | null>(null);
-  private pendingSnapshotSubject  = new BehaviorSubject<ContinuousContext | null>(null);
-  private latestContextSubject    = new BehaviorSubject<any>(null);
-  private latestAiResponseSubject = new BehaviorSubject<{text: string; timestamp: string} | null>(null);
+  private sensoryHistorySubject = new BehaviorSubject<HistoryEntry[]>([]);
+  private currentSensorySubject = new BehaviorSubject<HistoryEntry | null>(null);
+  private pendingSnapshotSubject = new BehaviorSubject<ContinuousContext | null>(null);
+  private latestContextSubject = new BehaviorSubject<any>(null);
+  private latestAiResponseSubject = new BehaviorSubject<{ text: string; timestamp: string } | null>(null);
 
-  public sensoryHistory$   = this.sensoryHistorySubject.asObservable();
-  public currentSensory$   = this.currentSensorySubject.asObservable();
-  public pendingSnapshot$  = this.pendingSnapshotSubject.asObservable();
+  public sensoryHistory$ = this.sensoryHistorySubject.asObservable();
+  public currentSensory$ = this.currentSensorySubject.asObservable();
+  public pendingSnapshot$ = this.pendingSnapshotSubject.asObservable();
   public latestRawContext$ = this.latestContextSubject.asObservable();
   public latestAiResponse$ = this.latestAiResponseSubject.asObservable();
 
   private aiSuggestionSubject = new Subject<AiContextSuggestion>();
-  public  aiSuggestion$       = this.aiSuggestionSubject.asObservable();
+  public aiSuggestion$ = this.aiSuggestionSubject.asObservable();
 
   constructor() {
     this.socket = io(environment.socketUrl, {
@@ -91,8 +90,8 @@ export class DirectorService implements OnDestroy {
   }
 
   private setupSocketListeners(): void {
-    this.socket.on('connect',       () => { console.log('[DirectorService] Connected'); this.connectionStatusSubject.next(true); });
-    this.socket.on('disconnect',    () => { console.log('[DirectorService] Disconnected'); this.connectionStatusSubject.next(false); });
+    this.socket.on('connect', () => { console.log('[DirectorService] Connected'); this.connectionStatusSubject.next(true); });
+    this.socket.on('disconnect', () => { console.log('[DirectorService] Disconnected'); this.connectionStatusSubject.next(false); });
     this.socket.on('connect_error', (err) => { console.error('[DirectorService] Connection error:', err); this.connectionStatusSubject.next(false); });
 
     this.socket.on('director_state', (data: DirectorState) => this.directorStateSubject.next(data));
@@ -104,7 +103,7 @@ export class DirectorService implements OnDestroy {
       if (data.is_partial && data.session_id) {
         const idx = log.findIndex(a => a.sessionId === data.session_id);
         if (idx >= 0) log[idx] = { text: data.context, sessionId: data.session_id, isPartial: true };
-        else          log.push({ text: data.context, sessionId: data.session_id, isPartial: true });
+        else log.push({ text: data.context, sessionId: data.session_id, isPartial: true });
       } else {
         log.push({ text: data.context, sessionId: data.session_id, isPartial: false });
       }
