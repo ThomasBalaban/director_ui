@@ -94,24 +94,24 @@ export class SensorsPageComponent implements OnInit, OnDestroy {
   }
 
   private processLog(newLog: string[], currentLog: TimestampedEntry[], prevLast: string): TimestampedEntry[] {
-  if (!newLog.length) return currentLog;
+    if (!newLog.length) return currentLog;
+    const newLast = newLog[newLog.length - 1];
+    if (newLast === prevLast) return currentLog;
 
-  const newLast = newLog[newLog.length - 1];
+    const prevIdx = prevLast ? newLog.lastIndexOf(prevLast) : -1;
 
-  // Nothing new
-  if (newLast === prevLast) return currentLog;
+    if (prevIdx >= 0 && prevIdx < newLog.length - 1) {
+      const newEntries = newLog.slice(prevIdx + 1).map(text => ({ text, ts: Date.now() }));
+      return [...currentLog, ...newEntries];
+    }
 
-  // Find where new entries begin by locating the previous tail in the incoming log
-  const prevIdx = prevLast ? newLog.lastIndexOf(prevLast) : -1;
-  if (prevIdx >= 0 && prevIdx < newLog.length - 1) {
-    // One or more new entries appended after the previous tail
-    const newEntries = newLog.slice(prevIdx + 1).map(text => ({ text, ts: Date.now() }));
-    return [...currentLog, ...newEntries];
+    // On first load or when previous tail rotated out — replay the whole buffer
+    if (!prevLast) {
+      return newLog.map(text => ({ text, ts: Date.now() }));
+    }
+
+    return [...currentLog, { text: newLast, ts: Date.now() }];
   }
-
-  // Previous tail not found — log was reset or fully rotated; just append the latest
-  return [...currentLog, { text: newLast, ts: Date.now() }];
-}
 
   ngOnDestroy(): void {
     this.subs.unsubscribe();

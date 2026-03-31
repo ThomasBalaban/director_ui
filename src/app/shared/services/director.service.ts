@@ -8,9 +8,9 @@ import {
   ClassifiedEvent, AiContextPacket
 } from '../interfaces/director.interfaces';
 
-const MAX_LOG             = 50;
-const MAX_SENSORY_HISTORY = 30;
-const MAX_EVENT_HISTORY   = 50;
+const MAX_LOG             = 150;
+const MAX_SENSORY_HISTORY = 150;
+const MAX_EVENT_HISTORY   = 150;
 
 export interface ContinuousContext {
   type: string;
