@@ -5,11 +5,6 @@ Lives in director_ui/ and manages services in sibling folders.
 Started automatically by `npm start` — you never need to run this manually.
 
 Port: 8010 (configurable via .env LAUNCHER_PORT)
-
-Health check strategy:
-  - HTTP services (FastAPI):  GET /health endpoint
-  - GUI/WebSocket services:   TCP port probe (asyncio.open_connection)
-  - Unmanaged services:       TCP port probe
 """
 
 import asyncio
@@ -28,17 +23,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-# Load environment variables from a .env file if present
 load_dotenv()
 
 from service_defs import SERVICE_DEFS, BOOT_RETRIES, UI_DIR, conda_python
 
-# Allow overriding the default port via environment variable
 LAUNCHER_PORT = int(os.environ.get("LAUNCHER_PORT", 8010))
-
-# ─────────────────────────────────────────────
-# Runtime state
-# ─────────────────────────────────────────────
 
 _procs:    Dict[str, Optional[subprocess.Popen]] = {k: None for k in SERVICE_DEFS}
 _logs:     Dict[str, deque]                       = {k: deque(maxlen=500) for k in SERVICE_DEFS}
@@ -47,16 +36,14 @@ _stopping: set                                     = set()
 
 http_client: Optional[httpx.AsyncClient] = None
 
-# ─────────────────────────────────────────────
-# Health checks
-# ─────────────────────────────────────────────
+# ── Health checks ─────────────────────────────────────────────────────────────
 
 async def _http_health(url: str, timeout: float = 2.0) -> bool:
     if not http_client:
         return False
     try:
         r = await http_client.get(url, timeout=timeout)
-        r.raise_for_status() # Ensure we get a 2xx response
+        r.raise_for_status()
         return True
     except httpx.HTTPError:
         return False
@@ -95,9 +82,7 @@ async def _wait_for_health(name: str, retries: int = 30, interval: float = 0.5) 
         await asyncio.sleep(interval)
     return False
 
-# ─────────────────────────────────────────────
-# Logging
-# ─────────────────────────────────────────────
+# ── Logging ───────────────────────────────────────────────────────────────────
 
 def _append_log(name: str, line: str) -> None:
     _logs[name].append(f"[{time.strftime('%H:%M:%S')}] {line.rstrip()}")
@@ -115,9 +100,7 @@ def _proc_alive(name: str) -> bool:
     p = _procs[name]
     return p is not None and p.poll() is None
 
-# ─────────────────────────────────────────────
-# Service control
-# ─────────────────────────────────────────────
+# ── Service control ───────────────────────────────────────────────────────────
 
 async def start_service(name: str) -> Dict[str, Any]:
     defn = SERVICE_DEFS.get(name)
@@ -130,25 +113,32 @@ async def start_service(name: str) -> Dict[str, Any]:
     if name in _starting:
         return {"ok": False, "reason": "already_starting"}
 
-    is_module = "-m" in defn["cmd"]
-    entry     = defn["cmd"][-1]
-    if not is_module and not os.path.exists(entry):
-        msg = f"Entry point not found: {entry}"
-        _append_log(name, f"❌ {msg}")
-        return {"ok": False, "reason": msg}
+    # Skip file-existence check for services that set no_entry_check
+    # (e.g. non-Python commands like npm, or entries using absolute paths)
+    if not defn.get("no_entry_check"):
+        is_module = "-m" in defn["cmd"]
+        entry     = defn["cmd"][-1]
+        if not is_module and not os.path.exists(entry):
+            msg = f"Entry point not found: {entry}"
+            _append_log(name, f"❌ {msg}")
+            return {"ok": False, "reason": msg}
 
     _starting.add(name)
     _append_log(name, f"--- Starting {defn['label']} ---")
-    _append_log(name, f"    cmd: {' '.join(defn['cmd'])}")
+    _append_log(name, f"    cmd: {' '.join(str(c) for c in defn['cmd'])}")
     _append_log(name, f"    cwd: {defn.get('cwd', UI_DIR)}")
 
     try:
+        # Merge any per-service env overrides (e.g. LAUNCHER_PORT for youtube_hub)
+        proc_env = os.environ.copy()
+        proc_env.update(defn.get("env", {}))
+
         p = subprocess.Popen(
             defn["cmd"],
             cwd=defn.get("cwd", UI_DIR),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            env=os.environ.copy(),
+            env=proc_env,
         )
         _procs[name] = p
         threading.Thread(target=_stream_output, args=(name, p.stdout), daemon=True).start()
@@ -213,15 +203,13 @@ async def stop_service(name: str) -> Dict[str, Any]:
     finally:
         _stopping.discard(name)
 
-# ─────────────────────────────────────────────
-# App lifecycle
-# ─────────────────────────────────────────────
+# ── App lifecycle ─────────────────────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global http_client
     http_client = httpx.AsyncClient()
-    
+
     try:
         print(f"🚀 Launcher ready on :{LAUNCHER_PORT}")
         print(f"   Desktop Monitor Python : {conda_python('gemini-screen-watcher')}")
@@ -230,16 +218,18 @@ async def lifespan(app: FastAPI):
         for name, defn in SERVICE_DEFS.items():
             if not defn.get("managed"):
                 continue
-            is_module = "-m" in defn["cmd"]
-            if is_module:
-                module = defn["cmd"][defn["cmd"].index("-m") + 1]
-                print(f"   ✅ {defn['label']:20s} → -m {module}  (cwd: {defn.get('cwd', UI_DIR)})")
+            if defn.get("no_entry_check"):
+                print(f"   ✅ {defn['label']:25s} → {' '.join(str(c) for c in defn['cmd'])}")
             else:
-                entry = defn["cmd"][-1]
-                print(f"   {'✅' if os.path.exists(entry) else '❌'} {defn['label']:20s} → {entry}")
-        
+                is_module = "-m" in defn["cmd"]
+                if is_module:
+                    module = defn["cmd"][defn["cmd"].index("-m") + 1]
+                    print(f"   ✅ {defn['label']:25s} → -m {module}")
+                else:
+                    entry = defn["cmd"][-1]
+                    print(f"   {'✅' if os.path.exists(entry) else '❌'} {defn['label']:25s} → {entry}")
         yield
-        
+
     finally:
         for name, p in _procs.items():
             if p and p.poll() is None:
@@ -252,9 +242,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Nami Launcher", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# ─────────────────────────────────────────────
-# Routes
-# ─────────────────────────────────────────────
+# ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.get("/launcher/services")
 async def list_services():
@@ -304,7 +292,6 @@ async def restart(name: str):
 async def get_logs(name: str, last: int = 150):
     if name not in SERVICE_DEFS:
         raise HTTPException(404, f"Unknown service: {name}")
-    # Return directly from the GET request without modifying state
     return {"lines": list(_logs[name])[-last:]}
 
 

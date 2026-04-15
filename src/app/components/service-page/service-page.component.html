@@ -121,6 +121,28 @@
             />
         }
 
+        <!-- YouTube Hub UI open-in-browser notice -->
+        @if (svc.id === 'youtube_hub_ui' && (svc.status === 'online' || svc.status === 'unhealthy')) {
+          <div class="gui-notice" style="border-bottom-color: rgba(251,191,36,0.2); background: rgba(251,191,36,0.05);">
+            <span>🌐</span>
+            <span style="color: #fbbf24;">
+              @if (svc.status === 'online') {
+                YouTube Hub is ready —
+                <a href="http://localhost:4201" target="_blank"
+                   style="color:#fbbf24; font-weight:700; text-decoration:underline;">
+                  open localhost:4201
+                </a>
+              } @else {
+                Angular is still building… this takes 1–2 min on first start.
+                <a href="http://localhost:4201" target="_blank"
+                   style="color:#fbbf24; opacity:0.7; text-decoration:underline;">
+                  Try localhost:4201
+                </a>
+              }
+            </span>
+          </div>
+        }
+
         <!-- GUI notice -->
         @if (isGui(svc.id) && svc.managed) {
           <div class="gui-notice">
@@ -153,6 +175,17 @@
                   {{ svc.actionPending ? 'Restarting...' : '↺ Restart' }}
                 </button>
               }
+            }
+
+            <!-- Open in browser button for youtube_hub_ui -->
+            @if (svc.id === 'youtube_hub_ui' && (svc.status === 'online' || svc.status === 'unhealthy' || svc.status === 'starting')) {
+              <a href="http://localhost:4201" target="_blank"
+                 class="btn btn-open-ui"
+                 [class.disabled]="svc.status !== 'online' && svc.status !== 'unhealthy'"
+                 (click)="svc.status !== 'online' && svc.status !== 'unhealthy' ? $event.preventDefault() : null"
+                 title="Open YouTube Hub in browser">
+                🌐 Open UI
+              </a>
             }
 
             <button
