@@ -122,7 +122,7 @@
         }
 
         <!-- YouTube Hub UI open-in-browser notice -->
-        @if (svc.id === 'youtube_hub_ui' && (svc.status === 'online' || svc.status === 'unhealthy')) {
+        @if (svc.id === 'youtube_hub' && (svc.status === 'online' || svc.status === 'unhealthy')) {
           <div class="gui-notice" style="border-bottom-color: rgba(251,191,36,0.2); background: rgba(251,191,36,0.05);">
             <span>🌐</span>
             <span style="color: #fbbf24;">
@@ -178,7 +178,7 @@
             }
 
             <!-- Open in browser button for youtube_hub_ui -->
-            @if (svc.id === 'youtube_hub_ui' && (svc.status === 'online' || svc.status === 'unhealthy' || svc.status === 'starting')) {
+            @if (svc.id === 'youtube_hub' && (svc.status === 'online' || svc.status === 'unhealthy' || svc.status === 'starting')) {
               <a href="http://localhost:4201" target="_blank"
                  class="btn btn-open-ui"
                  [class.disabled]="svc.status !== 'online' && svc.status !== 'unhealthy'"

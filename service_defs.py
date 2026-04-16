@@ -50,27 +50,33 @@ _YH_NG  = os.path.join(_YH_DIR, "node_modules", ".bin", "ng")
 SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
     # ── YouTube Hub ──────────────────────────────────────────────────────────
     "youtube_hub": {
-        "label":        "YouTube Hub (Launcher)",
-        "description":  "Python backend launcher for Backtrack scanner, SimpleAutoSubs, and Shorts publisher — port 8011",
-        "cmd":          [sys.executable, os.path.join(_YH_DIR, "launcher.py")],
-        "cwd":          _YH_DIR,
-        "port":         8011,
-        "health_check": "http",
-        "health_url":   "http://localhost:8011/launcher/health",
-        "env":          {"LAUNCHER_PORT": "8011"},
-        "managed":      True,
-    },
-    "youtube_hub_ui": {
-        "label":        "YouTube Hub (UI)",
-        "description":  "Angular dev server for the YouTube Hub dashboard — open localhost:4201 in your browser",
-        "cmd":          [_YH_NG, "serve", "--port", "4201"],
-        "cwd":          _YH_DIR,
+        "label":       "YouTube Hub",
+        "description": "Starts the Python backend launcher then the Angular UI — opens localhost:4201 when ready",
+        # Overall health is checked against the Angular UI (last step)
         "port":         4201,
         "health_check": "http",
         "health_url":   "http://localhost:4201/",
         "open_url":     "http://localhost:4201",
         "managed":      True,
-        "no_entry_check": True,
+        "steps": [
+            {
+                "label":        "Python launcher",
+                "cmd":          [sys.executable, os.path.join(_YH_DIR, "launcher.py")],
+                "cwd":          _YH_DIR,
+                "env":          {"LAUNCHER_PORT": "8011"},
+                "port":         8011,
+                "health_check": "http",
+                "health_url":   "http://localhost:8011/launcher/health",
+            },
+            {
+                "label":        "Angular UI",
+                "cmd":          [_YH_NG, "serve", "--port", "4201"],
+                "cwd":          _YH_DIR,
+                "port":         4201,
+                "health_check": "http",
+                "health_url":   "http://localhost:4201/",
+            },
+        ],
     },
 
     # ── Nami services ────────────────────────────────────────────────────────
@@ -210,8 +216,7 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
 }
 
 BOOT_RETRIES: Dict[str, int] = {
-    "youtube_hub":              12,
-    "youtube_hub_ui":           72,   # Angular build — up to 6 min on cold start
+    "youtube_hub":              84,   # 42 retries per step × 2 steps (Python ~30s, Angular ~3min)
     "hub":                      15,
     "nami":                     60,
     "tts_service":              20,
