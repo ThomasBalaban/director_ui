@@ -68,6 +68,7 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "port":         4201,
         "health_check": "http",
         "health_url":   "http://localhost:4201/",
+        "open_url":     "http://localhost:4201",
         "managed":      True,
         "no_entry_check": True,
     },

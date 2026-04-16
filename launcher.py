@@ -19,6 +19,7 @@ from collections import deque
 from contextlib import asynccontextmanager
 from typing import Optional, Dict, Any
 
+import webbrowser
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -148,6 +149,9 @@ async def start_service(name: str) -> Dict[str, Any]:
 
         if healthy:
             _append_log(name, f"✅ {defn['label']} ready on port {defn['port']}")
+            if defn.get("open_url"):
+                webbrowser.open(defn["open_url"])
+                _append_log(name, f"🌐 Opened {defn['open_url']} in browser")
             return {"ok": True, "pid": p.pid}
         elif p.poll() is not None:
             _append_log(name, f"❌ Process exited early (code {p.returncode})")
