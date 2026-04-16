@@ -63,10 +63,10 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
                 "label":        "Python launcher",
                 "cmd":          [sys.executable, os.path.join(_YH_DIR, "launcher.py")],
                 "cwd":          _YH_DIR,
-                "env":          {"LAUNCHER_PORT": "8011"},
-                "port":         8011,
+                "env":          {"LAUNCHER_PORT": "9011"},
+                "port":         9011,
                 "health_check": "http",
-                "health_url":   "http://localhost:8011/launcher/health",
+                "health_url":   "http://localhost:9011/launcher/health",
             },
             {
                 "label":        "Angular UI",
