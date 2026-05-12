@@ -132,13 +132,13 @@
 
 .banner {
   display: flex; align-items: flex-start; gap: 0.75rem;
-  margin: 1.25rem 1.5rem 0; padding: 0.875rem 1rem;
+  margin: 0 0 1.25rem; padding: 0.875rem 1rem;
   border-radius: var(--radius-md); font-size: 0.875rem;
   code { background: rgba(0, 0, 0, 0.3); padding: 1px 6px; border-radius: 4px; font-family: monospace; }
 }
 
 .banner-warn { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--accent-yellow-light); }
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(520px, 1fr)); gap: 1.25rem; padding: 1.25rem 1.5rem 2rem; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(520px, 1fr)); gap: 1.25rem; padding-bottom: 0.75rem; }
 
 // ── Sensors Page Feeds ──
 .feed-card {

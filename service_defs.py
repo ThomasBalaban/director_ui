@@ -88,6 +88,7 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "port":         8002,
         "health_check": "tcp",
         "managed":      True,
+        "autostart":    True,
     },
     "prompt_service": {
         "label":        "Prompt Service",
@@ -164,13 +165,14 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
     },
     "twitch_service": {
         "label":        "Twitch Service",
-        "description":  "Twitch chat, polls, predictions, redeems",
+        "description":  "Twitch chat, polls, predictions, redeems, live-status (EventSub)",
         "cmd":          [conda_python("nami"), os.path.join(PARENT_DIR, "twitch_service", "main.py")],
         "cwd":          os.path.join(PARENT_DIR, "twitch_service"),
         "port":         8005,
         "health_check": "http",
         "health_url":   "http://localhost:8005/health",
         "managed":      True,
+        "autostart":    True,
     },
     "nami": {
         "label":        "Nami",

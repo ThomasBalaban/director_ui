@@ -2,6 +2,109 @@
 
 app-header { display: block; }
 
+// ── Live indicator (app-live-indicator) ─────────────────────────────────────
+// Single pill: dot, label, embedded checkbox. Re-used across all pages.
+
+app-live-indicator { display: inline-flex; }
+
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.55rem 0.25rem 0.5rem;
+  border: 1px solid #4b5563;
+  border-radius: 9999px;
+  background: #1f2937;
+  color: #9ca3af;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+
+  .live-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    cursor: not-allowed;
+    &:disabled { cursor: not-allowed; }
+  }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #6b7280;
+    flex-shrink: 0;
+  }
+
+  .live-label { white-space: nowrap; }
+
+  .override-box {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border: 1px solid #6b7280;
+    border-radius: 3px;
+    background: #111827;
+    cursor: pointer;
+    margin: 0;
+    position: relative;
+    flex-shrink: 0;
+    transition: border-color 0.15s, background 0.15s;
+
+    &:hover { border-color: #a855f7; }
+    &:checked {
+      background: #a855f7;
+      border-color: #a855f7;
+      &::after {
+        content: '';
+        position: absolute;
+        left: 3px;
+        top: 0;
+        width: 4px;
+        height: 8px;
+        border: solid white;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+      }
+    }
+  }
+
+  &.manual .live-toggle {
+    cursor: pointer;
+    &:hover { color: white; }
+  }
+
+  &.live {
+    border-color: #ef4444;
+    background: #7f1d1d;
+    color: #fecaca;
+    .live-dot {
+      background: #ef4444;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.7);
+      animation: live-indicator-pulse 1.6s ease-in-out infinite;
+    }
+    .override-box {
+      border-color: #fecaca;
+      &:checked { background: #fca5a5; border-color: #fca5a5; }
+    }
+  }
+}
+
+@keyframes live-indicator-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
 .header { margin-bottom: 1rem; flex-shrink: 0; }
 
 .header-top {

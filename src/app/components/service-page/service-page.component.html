@@ -8,6 +8,7 @@
       <span class="launcher-badge" [class.online]="launcherOnline()">
         {{ launcherOnline() ? '● Launcher connected' : '○ Launcher offline' }}
       </span>
+      <app-live-indicator></app-live-indicator>
     </div>
     <div class="page-header-right">
       <button class="btn btn-start"
@@ -26,6 +27,8 @@
       </button>
     </div>
   </div>
+
+  <div class="page-content">
 
   <!-- Launcher offline warning -->
   @if (!launcherOnline()) {
@@ -234,5 +237,7 @@
 
       </div>
     }
+  </div>
+
   </div>
 </div>

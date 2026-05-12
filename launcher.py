@@ -29,6 +29,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Load every *.env file in ./secrets into os.environ so managed services
+# inherit the variables via subprocess env. See secrets/README.md.
+_SECRETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "secrets")
+if os.path.isdir(_SECRETS_DIR):
+    for _fname in sorted(os.listdir(_SECRETS_DIR)):
+        if _fname.endswith(".env"):
+            load_dotenv(os.path.join(_SECRETS_DIR, _fname), override=False)
+            print(f"[Launcher] 🔐 Loaded secrets from {_fname}")
+
 from service_defs import SERVICE_DEFS, BOOT_RETRIES, UI_DIR, conda_python
 
 LAUNCHER_PORT = int(os.environ.get("LAUNCHER_PORT", 8010))
@@ -283,6 +292,22 @@ async def stop_service(name: str) -> Dict[str, Any]:
 
 # ── App lifecycle ─────────────────────────────────────────────────────────────
 
+async def _autostart_services() -> None:
+    """Start every service flagged with autostart=True, in parallel."""
+    targets = [n for n, d in SERVICE_DEFS.items() if d.get("autostart") and d.get("managed")]
+    if not targets:
+        return
+    print(f"⚡ Autostarting: {', '.join(targets)}")
+    results = await asyncio.gather(*(start_service(n) for n in targets), return_exceptions=True)
+    for name, result in zip(targets, results):
+        if isinstance(result, Exception):
+            print(f"   ❌ {name} autostart raised: {result}")
+        elif not result.get("ok"):
+            print(f"   ⚠️  {name} autostart failed: {result.get('reason')}")
+        else:
+            print(f"   ✅ {name} autostarted (PID {result.get('pid')})")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global http_client
@@ -307,6 +332,10 @@ async def lifespan(app: FastAPI):
                 else:
                     entry = defn["cmd"][-1]
                     print(f"   {'✅' if os.path.exists(entry) else '❌'} {defn['label']:25s} → {entry}")
+
+        # Kick off autostart in the background — don't block the HTTP server coming up.
+        asyncio.create_task(_autostart_services())
+
         yield
     finally:
         for name in SERVICE_DEFS:

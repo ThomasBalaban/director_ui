@@ -6,11 +6,12 @@ import { ServiceDetail, AudioDevice, STATUS_META, GUI_SERVICES } from '../../sha
 import { LogPanelComponent } from './log-panel/log-panel.component';
 import { DevicePickerComponent } from './device-picker/device-picker.component';
 import { DirectorService } from '../../shared/services/director.service';
+import { LiveIndicatorComponent } from '../live-indicator/live-indicator.component';
 
 @Component({
   selector: 'app-services-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, LogPanelComponent, DevicePickerComponent],
+  imports: [CommonModule, RouterLink, LogPanelComponent, DevicePickerComponent, LiveIndicatorComponent],
   templateUrl: './service-page.component.html',
 })
 export class ServicesPageComponent extends PollingComponent {

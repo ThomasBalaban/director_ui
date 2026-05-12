@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(git check-ignore *)",
+      "Bash(conda run *)",
+      "Bash(TWITCH_APP_ID=test TWITCH_APP_SECRET=test conda run -n nami python -c \"import config; import eventsub_client; import main; print\\('ok'\\)\")"
+    ],
+    "additionalDirectories": [
+      "/Users/thomasbalaban/Downloads/projects/nami-services/twitch_service"
+    ]
+  }
+}

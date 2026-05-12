@@ -7,6 +7,7 @@ import { DirectorState } from '../../shared/interfaces/director.interfaces';
 import { MetricsPanelComponent } from '../panels/metrics-panel/metrics-panel.component';
 import { InterestGraphComponent } from '../panels/interest-graph/interest-graph.component';
 import { BasePanelComponent } from '../panels/base-panel/base-panel.component';
+import { LiveIndicatorComponent } from '../live-indicator/live-indicator.component';
 
 @Component({
   selector: 'app-brain-page',
@@ -17,6 +18,7 @@ import { BasePanelComponent } from '../panels/base-panel/base-panel.component';
     MetricsPanelComponent,
     InterestGraphComponent,
     BasePanelComponent,
+    LiveIndicatorComponent,
   ],
   styleUrl: 'brain-page.component.scss',
   templateUrl: 'brain-page.component.html',

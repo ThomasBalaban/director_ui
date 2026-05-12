@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Streamer } from '../../shared/interfaces/director.interfaces';
 import { NamiStatusComponent } from '../nami-status/nami-status.component';
+import { LiveIndicatorComponent } from '../live-indicator/live-indicator.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, FormsModule, NamiStatusComponent],
+  imports: [CommonModule, FormsModule, NamiStatusComponent, LiveIndicatorComponent],
   template: `
     <header class="header">
       <div class="header-top">
@@ -20,6 +21,8 @@ import { NamiStatusComponent } from '../nami-status/nami-status.component';
         <div class="pills">
           <!-- Nami gate status -->
           <app-nami-status></app-nami-status>
+
+          <app-live-indicator></app-live-indicator>
 
           <div class="pill state-pill" [ngClass]="getStateClass()">
             <span>🗣️</span>

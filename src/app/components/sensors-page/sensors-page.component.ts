@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { DirectorService } from '../../shared/services/director.service';
 import { AudioLogEntry } from '../../shared/interfaces/director.interfaces';
+import { LiveIndicatorComponent } from '../live-indicator/live-indicator.component';
 
 interface TimestampedEntry {
   text: string;
@@ -55,7 +56,7 @@ export class SensorFeedCardComponent implements AfterViewChecked {
 @Component({
   selector: 'app-sensors-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, SensorFeedCardComponent],
+  imports: [CommonModule, RouterLink, SensorFeedCardComponent, LiveIndicatorComponent],
   templateUrl: 'sensors-page.component.html',
   styleUrl: 'sensors-page.component.scss',
 })
