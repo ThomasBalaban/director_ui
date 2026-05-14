@@ -178,7 +178,7 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "label":        "Nami",
         "description":  "LLM + Twitch bot",
         "cmd":          [conda_python("nami"), "-m", "nami.main"],
-        "cwd":          PARENT_DIR,
+        "cwd":          os.path.join(PARENT_DIR, "nami"),
         "port":         8000,
         "health_check": "tcp",
         "managed":      True,
