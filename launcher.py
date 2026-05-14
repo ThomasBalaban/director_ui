@@ -25,6 +25,7 @@ from typing import Optional, Dict, Any, List
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -292,6 +293,93 @@ async def stop_service(name: str) -> Dict[str, Any]:
 
 # ── App lifecycle ─────────────────────────────────────────────────────────────
 
+# ── Live state driver ────────────────────────────────────────────────────────
+# Polls twitch_service /live_status, holds override + manual values, and
+# drives microphone_audio_service start/stop on debounced transitions.
+
+LIVE_STATUS_URL       = "http://localhost:8005/live_status"
+LIVE_DRIVEN_SERVICE   = "microphone_audio_service"
+LIVE_POLL_INTERVAL_S  = 5.0
+LIVE_DEBOUNCE_S       = 6.0
+
+_live_state: Dict[str, Any] = {
+    "auto_live":       False,
+    "auto_reachable":  False,
+    "override":        False,
+    "manual_live":     False,
+    "applied_live":    None,   # last value we actually acted on
+    "pending_target":  None,   # target we're debouncing toward
+    "pending_since":   0.0,
+}
+
+
+def _effective_live() -> bool:
+    return _live_state["manual_live"] if _live_state["override"] else _live_state["auto_live"]
+
+
+async def _live_state_tick() -> None:
+    # 1. Refresh auto value from twitch_service.
+    try:
+        r = await http_client.get(LIVE_STATUS_URL, timeout=2.0)
+        if r.status_code == 200:
+            data = r.json()
+            _live_state["auto_live"]      = bool(data.get("is_live"))
+            _live_state["auto_reachable"] = bool(data.get("ready"))
+        else:
+            _live_state["auto_reachable"] = False
+    except Exception:
+        _live_state["auto_reachable"] = False
+
+    # 2. Compute desired effective state.
+    effective = _effective_live()
+    applied   = _live_state["applied_live"]
+
+    # First tick after boot — adopt without acting, to avoid surprise mic flips.
+    if applied is None:
+        _live_state["applied_live"] = effective
+        return
+
+    # No change → clear any pending debounce.
+    if effective == applied:
+        _live_state["pending_target"] = None
+        return
+
+    now = time.time()
+
+    # New transition observed → start the debounce timer.
+    if _live_state["pending_target"] != effective:
+        _live_state["pending_target"] = effective
+        _live_state["pending_since"]  = now
+        return
+
+    # Still debouncing → wait.
+    if now - _live_state["pending_since"] < LIVE_DEBOUNCE_S:
+        return
+
+    # Stable change → act.
+    print(f"[Live] {applied} → {effective} (driving {LIVE_DRIVEN_SERVICE})")
+    try:
+        if effective:
+            result = await start_service(LIVE_DRIVEN_SERVICE)
+        else:
+            result = await stop_service(LIVE_DRIVEN_SERVICE)
+        print(f"[Live]   → {result}")
+    except Exception as e:
+        print(f"[Live]   ❌ action failed: {e}")
+
+    _live_state["applied_live"]   = effective
+    _live_state["pending_target"] = None
+
+
+async def _live_state_loop() -> None:
+    while True:
+        try:
+            await _live_state_tick()
+        except Exception as e:
+            print(f"[Live] tick error: {e}")
+        await asyncio.sleep(LIVE_POLL_INTERVAL_S)
+
+
 async def _autostart_services() -> None:
     """Start every service flagged with autostart=True, in parallel."""
     targets = [n for n, d in SERVICE_DEFS.items() if d.get("autostart") and d.get("managed")]
@@ -335,6 +423,8 @@ async def lifespan(app: FastAPI):
 
         # Kick off autostart in the background — don't block the HTTP server coming up.
         asyncio.create_task(_autostart_services())
+        # Live-state driver: polls twitch_service, drives mic on stream.online/offline.
+        asyncio.create_task(_live_state_loop())
 
         yield
     finally:
@@ -416,6 +506,38 @@ async def clear_logs(name: str):
 @app.get("/launcher/health")
 async def health():
     return {"status": "ok", "service": "launcher", "port": LAUNCHER_PORT}
+
+
+# ── Live state ───────────────────────────────────────────────────────────────
+
+def _live_state_payload() -> Dict[str, Any]:
+    return {
+        "auto_live":      _live_state["auto_live"],
+        "auto_reachable": _live_state["auto_reachable"],
+        "override":       _live_state["override"],
+        "manual_live":    _live_state["manual_live"],
+        "effective_live": _effective_live(),
+        "driven_service": LIVE_DRIVEN_SERVICE,
+    }
+
+
+class LiveStatePatch(BaseModel):
+    override:    Optional[bool] = None
+    manual_live: Optional[bool] = None
+
+
+@app.get("/launcher/live_state")
+async def get_live_state():
+    return _live_state_payload()
+
+
+@app.post("/launcher/live_state")
+async def patch_live_state(patch: LiveStatePatch):
+    if patch.override is not None:
+        _live_state["override"] = patch.override
+    if patch.manual_live is not None:
+        _live_state["manual_live"] = patch.manual_live
+    return _live_state_payload()
 
 
 if __name__ == "__main__":

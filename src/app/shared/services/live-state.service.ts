@@ -1,23 +1,25 @@
 import { Injectable, OnDestroy, signal, computed } from '@angular/core';
 
-const POLL_INTERVAL_MS = 15_000;
-const LIVE_STATUS_URL = '/twitch/live_status';
+const POLL_INTERVAL_MS = 5_000;
+const LIVE_STATE_URL = '/launcher/live_state';
 
-interface LiveStatusResponse {
-  channel: string;
-  is_live: boolean;
-  changed_at: number | null;
-  ready: boolean;
+interface LiveStatePayload {
+  auto_live: boolean;
+  auto_reachable: boolean;
+  override: boolean;
+  manual_live: boolean;
+  effective_live: boolean;
+  driven_service: string;
 }
 
 @Injectable({ providedIn: 'root' })
 export class LiveStateService implements OnDestroy {
-  private readonly _autoLive = signal(false);
-  private readonly _manualLive = signal(false);
-  private readonly _override = signal(false);
+  private readonly _autoLive      = signal(false);
+  private readonly _manualLive    = signal(false);
+  private readonly _override      = signal(false);
   private readonly _autoReachable = signal(false);
 
-  readonly override = this._override.asReadonly();
+  readonly override      = this._override.asReadonly();
   readonly autoReachable = this._autoReachable.asReadonly();
   readonly isLive = computed(() =>
     this._override() ? this._manualLive() : this._autoLive()
@@ -34,13 +36,13 @@ export class LiveStateService implements OnDestroy {
     if (this.timer) clearInterval(this.timer);
   }
 
-  toggleOverride(): void {
-    this._override.update(v => !v);
+  async toggleOverride(): Promise<void> {
+    await this.patch({ override: !this._override() });
   }
 
-  toggleManualLive(): void {
+  async toggleManualLive(): Promise<void> {
     if (this._override()) {
-      this._manualLive.update(v => !v);
+      await this.patch({ manual_live: !this._manualLive() });
     }
   }
 
@@ -50,13 +52,32 @@ export class LiveStateService implements OnDestroy {
 
   private async poll(): Promise<void> {
     try {
-      const res = await fetch(LIVE_STATUS_URL);
+      const res = await fetch(LIVE_STATE_URL);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as LiveStatusResponse;
-      this._autoLive.set(!!data.is_live);
-      this._autoReachable.set(!!data.ready);
+      this.apply((await res.json()) as LiveStatePayload);
     } catch {
       this._autoReachable.set(false);
     }
+  }
+
+  private async patch(body: Partial<Pick<LiveStatePayload, 'override' | 'manual_live'>>): Promise<void> {
+    try {
+      const res = await fetch(LIVE_STATE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      this.apply((await res.json()) as LiveStatePayload);
+    } catch {
+      this._autoReachable.set(false);
+    }
+  }
+
+  private apply(p: LiveStatePayload): void {
+    this._autoLive.set(p.auto_live);
+    this._manualLive.set(p.manual_live);
+    this._override.set(p.override);
+    this._autoReachable.set(p.auto_reachable);
   }
 }
