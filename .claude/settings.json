@@ -4,11 +4,23 @@
       "Bash(npx tsc *)",
       "Bash(git check-ignore *)",
       "Bash(conda run *)",
-      "Bash(TWITCH_APP_ID=test TWITCH_APP_SECRET=test conda run -n nami python -c \"import config; import eventsub_client; import main; print\\('ok'\\)\")"
+      "Bash(TWITCH_APP_ID=test TWITCH_APP_SECRET=test conda run -n nami python -c \"import config; import eventsub_client; import main; print\\('ok'\\)\")",
+      "Bash(python3 -c 'import ast,sys; ast.parse\\(open\\('\\\\''__TRACKED_VAR__'\\\\''\\).read\\(\\)\\); print\\('\\\\''ok: __TRACKED_VAR__'\\\\''\\)')",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('/Users/thomasbalaban/Downloads/projects/nami-services/stream_audio_service/openai_realtime_client.py'\\).read\\(\\)\\); print\\('ok'\\)\")",
+      "Bash(python3 -c \"import yaml; yaml.safe_load\\(open\\('/Users/thomasbalaban/Downloads/projects/nami-services/nami/nami/model_in_progress.yaml'\\)\\)\")",
+      "Bash(python3 -m py_compile /Users/thomasbalaban/Downloads/projects/nami-services/director_engine/systems/decision_engine.py)",
+      "Bash(python3 -m py_compile /Users/thomasbalaban/Downloads/projects/nami-services/director_engine/services/speech_dispatcher.py)",
+      "Bash(python3 -m py_compile systems/correlation_engine.py)"
     ],
     "additionalDirectories": [
       "/Users/thomasbalaban/Downloads/projects/nami-services/twitch_service",
-      "/Users/thomasbalaban/Downloads/projects/nami-services/nami/nami"
+      "/Users/thomasbalaban/Downloads/projects/nami-services/nami/nami",
+      "/Users/thomasbalaban/Downloads/projects/nami-services/vision_service",
+      "/Users/thomasbalaban/Downloads/projects/nami-services/stream_audio_service",
+      "/Users/thomasbalaban/Downloads/projects/nami-services/microphone_audio_service",
+      "/Users/thomasbalaban/Downloads/projects/nami-services/sensory_data",
+      "/Users/thomasbalaban/Downloads/projects/nami-services/event_interpreter_service",
+      "/Users/thomasbalaban/Downloads/projects/nami-services/director_engine"
     ]
   }
 }
