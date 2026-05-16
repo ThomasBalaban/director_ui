@@ -10,7 +10,10 @@
       "Bash(python3 -c \"import yaml; yaml.safe_load\\(open\\('/Users/thomasbalaban/Downloads/projects/nami-services/nami/nami/model_in_progress.yaml'\\)\\)\")",
       "Bash(python3 -m py_compile /Users/thomasbalaban/Downloads/projects/nami-services/director_engine/systems/decision_engine.py)",
       "Bash(python3 -m py_compile /Users/thomasbalaban/Downloads/projects/nami-services/director_engine/services/speech_dispatcher.py)",
-      "Bash(python3 -m py_compile systems/correlation_engine.py)"
+      "Bash(python3 -m py_compile systems/correlation_engine.py)",
+      "Bash(python3 -m py_compile services/sensor_bridge.py)",
+      "Bash(python3 -m py_compile shared.py)",
+      "Bash(echo \"director_state.json\")"
     ],
     "additionalDirectories": [
       "/Users/thomasbalaban/Downloads/projects/nami-services/twitch_service",

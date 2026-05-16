@@ -47,12 +47,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
   pendingAiContext: string | null = null;
 
   private subscriptions = new Subscription();
+  // True once we've seeded the operator-control fields from either
+  // localStorage or the first director_state push.
+  private controlsBootstrapped = false;
 
   constructor(private directorService: DirectorService) {}
 
   ngOnInit(): void {
     this.loadStreamers();
+    this.bootstrapControlsFromLocalStorage();
     this.setupSubscriptions();
+  }
+
+  private bootstrapControlsFromLocalStorage(): void {
+    const stored = this.directorService.getStoredControlState();
+    let any = false;
+    if (stored.streamer !== undefined) { this.selectedStreamer = stored.streamer; any = true; }
+    if (stored.context !== undefined) { this.manualContext = stored.context; any = true; }
+    if (stored.streamerLocked !== undefined) { this.streamerLocked = stored.streamerLocked; any = true; }
+    if (stored.contextLocked !== undefined) { this.contextLocked = stored.contextLocked; any = true; }
+    if (any) this.controlsBootstrapped = true;
   }
 
   private async loadStreamers(): Promise<void> {
@@ -66,12 +80,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     this.subscriptions.add(
       this.directorService.directorState$.subscribe(state => {
-        if (state) {
-          this.directorState    = state;
+        if (!state) return;
+        this.directorState = state;
+        // The four operator-control fields are UI-owned once bootstrapped from
+        // localStorage. Only adopt the server's values on first sync when we
+        // have nothing stored locally — otherwise the periodic director_state
+        // emits would overwrite a user's set+lock with stale defaults.
+        if (!this.controlsBootstrapped) {
           this.streamerLocked   = state.streamer_locked;
           this.contextLocked    = state.context_locked;
           this.manualContext    = state.manual_context || '';
           this.selectedStreamer = state.current_streamer || 'peepingotter';
+          this.controlsBootstrapped = true;
         }
       })
     );

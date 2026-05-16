@@ -11,6 +11,19 @@ const MAX_LOG = 150;
 const MAX_SENSORY_HISTORY = 150;
 const MAX_EVENT_HISTORY = 150;
 
+// Operator-set controls (streamer/context + locks). Persisted to localStorage
+// so they survive director restarts and so "set + lock before booting services"
+// works: events queued before the director-hub connect would otherwise be lost,
+// and the director's default state would clobber the UI on its first emit.
+const CONTROL_STATE_KEY = 'nami_director_controls_v1';
+
+export interface DirectorControlState {
+  streamer?: string;
+  context?: string;
+  streamerLocked?: boolean;
+  contextLocked?: boolean;
+}
+
 export interface ContinuousContext {
   type: string;
   context_string: string;
@@ -90,7 +103,13 @@ export class DirectorService implements OnDestroy {
   }
 
   private setupSocketListeners(): void {
-    this.socket.on('connect', () => { console.log('[DirectorService] Connected'); this.connectionStatusSubject.next(true); });
+    this.socket.on('connect', () => {
+      console.log('[DirectorService] Connected');
+      this.connectionStatusSubject.next(true);
+      // Re-push any operator-set controls so the director picks them up even
+      // if the user configured them before the services were online.
+      this.pushStoredControlsToDirector();
+    });
     this.socket.on('disconnect', () => { console.log('[DirectorService] Disconnected'); this.connectionStatusSubject.next(false); });
     this.socket.on('connect_error', (err) => { console.error('[DirectorService] Connection error:', err); this.connectionStatusSubject.next(false); });
 
@@ -174,10 +193,54 @@ export class DirectorService implements OnDestroy {
     });
   }
 
-  setStreamer(streamerId: string): void { this.socket.emit('set_streamer', { streamer_id: streamerId }); }
-  setManualContext(context: string): void { this.socket.emit('set_manual_context', { context }); }
-  setStreamerLock(locked: boolean): void { this.socket.emit('set_streamer_lock', { locked }); }
-  setContextLock(locked: boolean): void { this.socket.emit('set_context_lock', { locked }); }
+  setStreamer(streamerId: string): void {
+    this.saveControlState({ streamer: streamerId });
+    this.socket.emit('set_streamer', { streamer_id: streamerId });
+  }
+  setManualContext(context: string): void {
+    this.saveControlState({ context });
+    this.socket.emit('set_manual_context', { context });
+  }
+  setStreamerLock(locked: boolean): void {
+    this.saveControlState({ streamerLocked: locked });
+    this.socket.emit('set_streamer_lock', { locked });
+  }
+  setContextLock(locked: boolean): void {
+    this.saveControlState({ contextLocked: locked });
+    this.socket.emit('set_context_lock', { locked });
+  }
+
+  // --- Operator control state persistence ---
+
+  getStoredControlState(): DirectorControlState {
+    return this.loadControlState();
+  }
+
+  private loadControlState(): DirectorControlState {
+    try {
+      const raw = localStorage.getItem(CONTROL_STATE_KEY);
+      return raw ? (JSON.parse(raw) as DirectorControlState) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private saveControlState(patch: DirectorControlState): void {
+    try {
+      const next: DirectorControlState = { ...this.loadControlState(), ...patch };
+      localStorage.setItem(CONTROL_STATE_KEY, JSON.stringify(next));
+    } catch {
+      // localStorage may be unavailable (private mode, quota); ignore — server still receives the emit.
+    }
+  }
+
+  private pushStoredControlsToDirector(): void {
+    const s = this.loadControlState();
+    if (s.streamer !== undefined) this.socket.emit('set_streamer', { streamer_id: s.streamer });
+    if (s.context !== undefined) this.socket.emit('set_manual_context', { context: s.context });
+    if (s.streamerLocked !== undefined) this.socket.emit('set_streamer_lock', { locked: s.streamerLocked });
+    if (s.contextLocked !== undefined) this.socket.emit('set_context_lock', { locked: s.contextLocked });
+  }
   sendEvent(sourceStr: string, text: string, metadata: Record<string, unknown> = {}, username?: string): void {
     this.socket.emit('event', { source_str: sourceStr, text, metadata, username });
   }
