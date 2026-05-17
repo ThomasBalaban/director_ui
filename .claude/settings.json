@@ -13,7 +13,16 @@
       "Bash(python3 -m py_compile systems/correlation_engine.py)",
       "Bash(python3 -m py_compile services/sensor_bridge.py)",
       "Bash(python3 -m py_compile shared.py)",
-      "Bash(echo \"director_state.json\")"
+      "Bash(echo \"director_state.json\")",
+      "Bash(pip show *)",
+      "Bash(python3 -c \"from google.genai import live; help\\(live\\)\")",
+      "Bash(python3 -c \"from google import genai; from google.genai import types; print\\([x for x in dir\\(types\\) if 'live' in x.lower\\(\\) or 'Live' in x]\\)\")",
+      "Bash(python3 -c ' *)",
+      "Bash(mkdir -p /Users/thomasbalaban/Downloads/projects/nami-services/vision_live_poc)",
+      "Bash(python3 -m py_compile main.py)",
+      "Bash(python3 -m py_compile main.py list_live_models.py)",
+      "Bash(python3 -m py_compile dump_frame.py)",
+      "Bash(python3 -m py_compile config.py)"
     ],
     "additionalDirectories": [
       "/Users/thomasbalaban/Downloads/projects/nami-services/twitch_service",
@@ -23,7 +32,8 @@
       "/Users/thomasbalaban/Downloads/projects/nami-services/microphone_audio_service",
       "/Users/thomasbalaban/Downloads/projects/nami-services/sensory_data",
       "/Users/thomasbalaban/Downloads/projects/nami-services/event_interpreter_service",
-      "/Users/thomasbalaban/Downloads/projects/nami-services/director_engine"
+      "/Users/thomasbalaban/Downloads/projects/nami-services/director_engine",
+      "/Users/thomasbalaban/Downloads/projects/nami-services"
     ]
   }
 }
