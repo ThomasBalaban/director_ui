@@ -6,7 +6,11 @@
       <a routerLink="/" class="back-btn">← Dashboard</a>
       <h1 class="page-title">Services</h1>
       <span class="launcher-badge" [class.online]="launcherOnline()">
-        {{ launcherOnline() ? '● Launcher connected' : '○ Launcher offline' }}
+        @switch (launcherState()) {
+          @case ('online')  { ● Launcher connected }
+          @case ('offline') { ○ Launcher offline }
+          @default          { ○ Checking… }
+        }
       </span>
       <app-live-indicator></app-live-indicator>
     </div>
@@ -30,13 +34,25 @@
 
   <div class="page-content">
 
-  <!-- Launcher offline warning -->
-  @if (!launcherOnline()) {
+  <!-- Launcher offline warning — only after confirmed offline, not during initial 'unknown' poll -->
+  @if (launcherState() === 'offline') {
     <div class="banner banner-warn">
       <span>⚠️</span>
       <div>
         <strong>Launcher not running.</strong>
         Start it with <code>npm start</code> in the <code>director_ui</code> folder.
+      </div>
+    </div>
+  }
+
+  <!-- Initial-load placeholder — before first poll resolves, show a loading state
+       instead of an empty page so the user knows something is happening. -->
+  @if (launcherState() === 'unknown' && services().length === 0) {
+    <div class="banner banner-info">
+      <span class="inline-spinner"></span>
+      <div>
+        <strong>Loading services…</strong>
+        Asking the launcher for the current service status.
       </div>
     </div>
   }

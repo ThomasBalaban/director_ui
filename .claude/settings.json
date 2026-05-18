@@ -22,7 +22,10 @@
       "Bash(python3 -m py_compile main.py)",
       "Bash(python3 -m py_compile main.py list_live_models.py)",
       "Bash(python3 -m py_compile dump_frame.py)",
-      "Bash(python3 -m py_compile config.py)"
+      "Bash(python3 -m py_compile config.py)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('services/llm_analyst.py'\\).read\\(\\)\\); print\\('llm_analyst.py: syntax OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('core_logic.py'\\).read\\(\\)\\); print\\('core_logic.py: syntax OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('main.py'\\).read\\(\\)\\); print\\('main.py: syntax OK'\\)\")"
     ],
     "additionalDirectories": [
       "/Users/thomasbalaban/Downloads/projects/nami-services/twitch_service",

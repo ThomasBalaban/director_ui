@@ -138,6 +138,7 @@
 }
 
 .banner-warn { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--accent-yellow-light); }
+.banner-info { background: rgba(96, 165, 250, 0.08); border: 1px solid rgba(96, 165, 250, 0.25); color: var(--text-dim); align-items: center; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(520px, 1fr)); gap: 1.25rem; padding-bottom: 0.75rem; }
 
 // ── Sensors Page Feeds ──

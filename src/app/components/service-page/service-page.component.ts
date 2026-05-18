@@ -20,10 +20,20 @@ export class ServicesPageComponent extends PollingComponent {
   protected override pollingInterval = 4000;
 
   services          = signal<ServiceDetail[]>([]);
-  launcherOnline    = signal(false);
+  // Tri-state: 'unknown' before first poll resolves, 'online' / 'offline' after.
+  // Banner only shows when explicitly 'offline'. Prevents the warning from
+  // flashing on page load or on a single transient fetch hiccup.
+  launcherState     = signal<'unknown' | 'online' | 'offline'>('unknown');
+  launcherOnline    = () => this.launcherState() === 'online';
   loading           = signal(false);
   lastUpdated       = signal('—');
   bulkActionPending = signal(false);
+
+  // Require 2 consecutive failures before flipping to 'offline'. /launcher/services
+  // does sequential health checks across ~14 services and can take long enough
+  // on a busy stack to trip a single fetch timeout.
+  private consecutivePollFailures = 0;
+  private readonly POLL_FAILURE_THRESHOLD = 2;
 
   // ── TTS (output) ──────────────────────────────────────────────────────────
   ttsDevices        = signal<AudioDevice[]>([]);
@@ -66,7 +76,8 @@ export class ServicesPageComponent extends PollingComponent {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const fresh: ServiceDetail[] = await res.json();
-      this.launcherOnline.set(true);
+      this.launcherState.set('online');
+      this.consecutivePollFailures = 0;
 
       const current = this.services();
       this.services.set(fresh.map(s => {
@@ -106,7 +117,11 @@ export class ServicesPageComponent extends PollingComponent {
       }
 
     } catch {
-      this.launcherOnline.set(false);
+      this.consecutivePollFailures += 1;
+      if (this.consecutivePollFailures >= this.POLL_FAILURE_THRESHOLD) {
+        this.launcherState.set('offline');
+      }
+      // Single transient failure: keep last known state, banner stays hidden.
     } finally {
       this.loading.set(false);
     }
