@@ -57,6 +57,13 @@ export class ServicesPageComponent extends PollingComponent {
   streamSwapMessage    = signal('');
   private streamSwapAt = 0;
 
+  // ── Vision (video input) ──────────────────────────────────────────────────
+  visionDevices        = signal<AudioDevice[]>([]);
+  visionActiveDeviceId = signal<number | null>(null);
+  visionDeviceLoading  = signal(false);
+  visionDeviceSetting  = signal(false);
+  private visionSwapAt = 0;
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   statusMeta(status: string) { return STATUS_META[status] ?? STATUS_META['unknown']; }
@@ -94,6 +101,7 @@ export class ServicesPageComponent extends PollingComponent {
       const tts    = this.services().find(s => s.id === 'tts_service');
       const mic    = this.services().find(s => s.id === 'microphone_audio_service');
       const stream = this.services().find(s => s.id === 'stream_audio_service');
+      const vision = this.services().find(s => s.id === 'vision_service');
 
       if (tts?.status === 'online') {
         await this.loadTtsDevices();
@@ -114,6 +122,13 @@ export class ServicesPageComponent extends PollingComponent {
       } else {
         this.streamDevices.set([]);
         this.streamActiveDeviceId.set(null);
+      }
+
+      if (vision?.status === 'online') {
+        await this.loadVisionDevices();
+      } else {
+        this.visionDevices.set([]);
+        this.visionActiveDeviceId.set(null);
       }
 
     } catch {
@@ -139,6 +154,38 @@ export class ServicesPageComponent extends PollingComponent {
       this.ttsActiveDeviceId.set(data.active_device_id ?? null);
     } catch { /* silent */ }
     finally { this.ttsDeviceLoading.set(false); }
+  }
+
+  async loadVisionDevices() {
+    this.visionDeviceLoading.set(true);
+    try {
+      const res = await fetch('/vision/devices');
+      if (!res.ok) return;
+      const data = await res.json();
+      this.visionDevices.set(data.devices ?? []);
+      const now = Date.now();
+      if (now - this.visionSwapAt > 6000) {
+        this.visionActiveDeviceId.set(data.current_device_id ?? null);
+      }
+    } catch { /* silent */ }
+    finally { this.visionDeviceLoading.set(false); }
+  }
+
+  async selectVisionDevice(deviceId: number) {
+    if (this.visionDeviceSetting()) return;
+    this.visionDeviceSetting.set(true);
+    try {
+      const res = await fetch('/vision/set-device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_id: deviceId }),
+      });
+      if (res.ok) {
+        this.visionSwapAt = Date.now();
+        this.visionActiveDeviceId.set(deviceId);
+      }
+    } catch { /* silent */ }
+    finally { this.visionDeviceSetting.set(false); }
   }
 
   async loadInputDevices(target: 'mic' | 'stream') {

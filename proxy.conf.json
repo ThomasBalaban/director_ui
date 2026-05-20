@@ -33,6 +33,11 @@
     "secure": false,
     "pathRewrite": { "^/stream-audio": "" }
   },
+  "/vision": {
+    "target": "http://localhost:8016",
+    "secure": false,
+    "pathRewrite": { "^/vision": "" }
+  },
   "/context-service": {
     "target": "http://localhost:8020",
     "secure": false,

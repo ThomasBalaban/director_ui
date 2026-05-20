@@ -13,9 +13,10 @@ export interface ServiceDetail extends ServiceStatus {
 export interface AudioDevice {
   id: number;
   name: string;
-  channels: number;
-  default_samplerate: number;
-  is_active: boolean;
+  // Audio-only metadata — absent when reusing this picker for video devices.
+  channels?: number;
+  default_samplerate?: number;
+  is_active?: boolean;
 }
 
 export const STATUS_META: Record<string, { label: string; color: string; icon: string }> = {

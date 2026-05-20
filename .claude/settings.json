@@ -25,7 +25,21 @@
       "Bash(python3 -m py_compile config.py)",
       "Bash(python -c \"import ast; ast.parse\\(open\\('services/llm_analyst.py'\\).read\\(\\)\\); print\\('llm_analyst.py: syntax OK'\\)\")",
       "Bash(python -c \"import ast; ast.parse\\(open\\('core_logic.py'\\).read\\(\\)\\); print\\('core_logic.py: syntax OK'\\)\")",
-      "Bash(python -c \"import ast; ast.parse\\(open\\('main.py'\\).read\\(\\)\\); print\\('main.py: syntax OK'\\)\")"
+      "Bash(python -c \"import ast; ast.parse\\(open\\('main.py'\\).read\\(\\)\\); print\\('main.py: syntax OK'\\)\")",
+      "Bash(python -c 'import ast; ast.parse\\(open\\('\\\\''__TRACKED_VAR__'\\\\''\\).read\\(\\)\\); print\\('\\\\''__TRACKED_VAR__: OK'\\\\''\\)')",
+      "Bash(python -c \"import json; json.load\\(open\\('proxy.conf.json'\\)\\); print\\('proxy.conf.json: OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('service.py'\\).read\\(\\)\\); print\\('service.py: OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('http_control.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(curl -s http://localhost:11434/api/ps)",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s http://localhost:11434/api/tags)",
+      "Bash(env)",
+      "Bash(launchctl getenv *)",
+      "Bash(ls -la ~/.ollama/logs/ 2>&1 | head -20)",
+      "Read(//Users/thomasbalaban/.ollama/logs/**)",
+      "Bash(grep -nB1 -A1 \"ollama_client\\\\.\\\\\\(chat\\\\|generate\\\\\\)\\\\|_get_client\\(\\).generate\" /Users/thomasbalaban/Downloads/projects/nami-services/director_engine/services/llm_analyst.py /Users/thomasbalaban/Downloads/projects/nami-services/director_engine/context/context_compression.py)",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('main.py'\\).read\\(\\)\\); print\\('OK main.py'\\)\")",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('/Users/thomasbalaban/Downloads/projects/nami-services/director_engine/context/context_store.py'\\).read\\(\\)\\); print\\('OK'\\)\")"
     ],
     "additionalDirectories": [
       "/Users/thomasbalaban/Downloads/projects/nami-services/twitch_service",

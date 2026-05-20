@@ -11,6 +11,7 @@ Each step is started and health-checked in order before moving to the next.
 """
 
 import asyncio
+import re
 import subprocess
 import threading
 import time
@@ -19,6 +20,9 @@ import sys
 import httpx
 import uvicorn
 import webbrowser
+
+# Match leading `[HH:MM:SS]` or `[HH:MM:SS.fff]` stamps the child already wrote.
+_PRESTAMP_RE = re.compile(r"^\[\d{2}:\d{2}:\d{2}(\.\d{1,6})?\]\s")
 from collections import deque
 from contextlib import asynccontextmanager
 from typing import Optional, Dict, Any, List
@@ -100,7 +104,13 @@ async def _wait_for(hc: str, url_or_port, retries: int, interval: float = 0.5) -
 # ── Logging ───────────────────────────────────────────────────────────────────
 
 def _append_log(name: str, line: str) -> None:
-    _logs[name].append(f"[{time.strftime('%H:%M:%S')}] {line.rstrip()}")
+    stripped = line.rstrip()
+    # If the child already wrote a timestamp at write-time, trust it — it's
+    # more accurate than our read-time clock when the pipe drains in a burst.
+    if _PRESTAMP_RE.match(stripped):
+        _logs[name].append(stripped)
+    else:
+        _logs[name].append(f"[{time.strftime('%H:%M:%S')}] {stripped}")
 
 
 def _stream_output(name: str, pipe) -> None:
@@ -119,6 +129,12 @@ def _procs_alive(name: str) -> bool:
 def _launch_proc(name: str, cmd: list, cwd: str, env: dict) -> subprocess.Popen:
     proc_env = os.environ.copy()
     proc_env.update(env)
+    # Force the child Python to flush stdout per line instead of block-buffering
+    # when stdout is a pipe. Without this, child print() output sits in a 4-8KB
+    # buffer and lands in the launcher's reader in bursts — making the logs look
+    # like the service "wakes up" periodically and dumping ~100 events at the
+    # same timestamp.
+    proc_env.setdefault("PYTHONUNBUFFERED", "1")
     p = subprocess.Popen(
         cmd,
         cwd=cwd,

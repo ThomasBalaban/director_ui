@@ -26,17 +26,21 @@ import { AudioDevice } from '../../../shared/interfaces/services.interface';
                 class="device-btn"
                 [class.device-active]="dev.id === activeDeviceId"
                 [disabled]="setting"
-                [title]="dev.name + ' — ' + dev.channels + 'ch @ ' + dev.default_samplerate + 'Hz'"
+                [title]="deviceTooltip(dev)"
                 (click)="selectDevice.emit(dev.id)"
               >
                 <span class="device-check">{{ dev.id === activeDeviceId ? '✓' : '' }}</span>
                 <span class="device-name">{{ dev.name }}</span>
-                <span class="device-meta">{{ dev.default_samplerate / 1000 | number:'1.0-0' }}kHz</span>
+                @if (dev.default_samplerate) {
+                  <span class="device-meta">{{ dev.default_samplerate / 1000 | number:'1.0-0' }}kHz</span>
+                } @else {
+                  <span class="device-meta">#{{ dev.id }}</span>
+                }
               </button>
             }
           </div>
         } @else if (!loading) {
-          <div class="device-empty">No output devices found</div>
+          <div class="device-empty">No devices found</div>
         }
       }
     </div>
@@ -56,6 +60,13 @@ export class DevicePickerComponent {
     if (this.activeDeviceId === null) return null;
     const device = this.devices.find(d => d.id === this.activeDeviceId);
     return device ? device.name : null;
+  }
+
+  deviceTooltip(dev: AudioDevice): string {
+    if (dev.channels != null && dev.default_samplerate != null) {
+      return `${dev.name} — ${dev.channels}ch @ ${dev.default_samplerate}Hz`;
+    }
+    return `${dev.name} (id ${dev.id})`;
   }
 
   toggleExpanded(): void {

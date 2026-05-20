@@ -140,6 +140,19 @@
             />
         }
 
+        <!-- Vision input device picker -->
+        @if (svc.id === 'vision_service' && svc.status === 'online') {
+            <app-device-picker
+                class="device-picker--input"
+                label="📷 Video Input Device"
+                [devices]="visionDevices()"
+                [activeDeviceId]="visionActiveDeviceId()"
+                [loading]="visionDeviceLoading()"
+                [setting]="visionDeviceSetting()"
+                (selectDevice)="selectVisionDevice($event)"
+            />
+        }
+
         <!-- YouTube Hub UI open-in-browser notice -->
         @if (svc.id === 'youtube_hub' && (svc.status === 'online' || svc.status === 'unhealthy')) {
           <div class="gui-notice" style="border-bottom-color: rgba(251,191,36,0.2); background: rgba(251,191,36,0.05);">
