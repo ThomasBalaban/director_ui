@@ -39,7 +39,15 @@
       "Read(//Users/thomasbalaban/.ollama/logs/**)",
       "Bash(grep -nB1 -A1 \"ollama_client\\\\.\\\\\\(chat\\\\|generate\\\\\\)\\\\|_get_client\\(\\).generate\" /Users/thomasbalaban/Downloads/projects/nami-services/director_engine/services/llm_analyst.py /Users/thomasbalaban/Downloads/projects/nami-services/director_engine/context/context_compression.py)",
       "Bash(python3 -c \"import ast; ast.parse\\(open\\('main.py'\\).read\\(\\)\\); print\\('OK main.py'\\)\")",
-      "Bash(python3 -c \"import ast; ast.parse\\(open\\('/Users/thomasbalaban/Downloads/projects/nami-services/director_engine/context/context_store.py'\\).read\\(\\)\\); print\\('OK'\\)\")"
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('/Users/thomasbalaban/Downloads/projects/nami-services/director_engine/context/context_store.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(system_profiler SPCameraDataType)",
+      "Bash(ffmpeg -hide_banner -f avfoundation -list_devices true -i \"\")",
+      "Bash(python3 -c \"import cv2; print\\(cv2.__version__\\)\")",
+      "Bash(python3 -c \"import AVFoundation; devs = AVFoundation.AVCaptureDevice.devicesWithMediaType_\\('vide'\\); [print\\(i, d.localizedName\\(\\)\\) for i,d in enumerate\\(devs\\)]\")",
+      "Bash(conda env *)",
+      "Bash(/Users/thomasbalaban/miniconda3/envs/gemini-screen-watcher/bin/python -c ' *)",
+      "Bash(/Users/thomasbalaban/miniconda3/envs/gemini-screen-watcher/bin/pip list *)",
+      "Bash(system_profiler SPCameraDataType -json)"
     ],
     "additionalDirectories": [
       "/Users/thomasbalaban/Downloads/projects/nami-services/twitch_service",
