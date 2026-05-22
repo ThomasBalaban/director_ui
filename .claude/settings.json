@@ -47,7 +47,8 @@
       "Bash(conda env *)",
       "Bash(/Users/thomasbalaban/miniconda3/envs/gemini-screen-watcher/bin/python -c ' *)",
       "Bash(/Users/thomasbalaban/miniconda3/envs/gemini-screen-watcher/bin/pip list *)",
-      "Bash(system_profiler SPCameraDataType -json)"
+      "Bash(system_profiler SPCameraDataType -json)",
+      "Bash(xargs ls -la)"
     ],
     "additionalDirectories": [
       "/Users/thomasbalaban/Downloads/projects/nami-services/twitch_service",
