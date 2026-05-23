@@ -556,6 +556,37 @@ async def patch_live_state(patch: LiveStatePatch):
     return _live_state_payload()
 
 
+# ── Reply mode (proxy to prompt_service) ────────────────────────────────────
+
+PROMPT_SERVICE_URL = "http://localhost:8001"
+
+
+class ReplyModePatch(BaseModel):
+    mode: str
+
+
+@app.get("/launcher/reply_mode")
+async def get_reply_mode():
+    try:
+        r = await http_client.get(f"{PROMPT_SERVICE_URL}/reply_mode", timeout=2.0)
+        return r.json()
+    except Exception as e:
+        return {"mode": "off", "reachable": False, "error": str(e)}
+
+
+@app.post("/launcher/reply_mode")
+async def post_reply_mode(patch: ReplyModePatch):
+    try:
+        r = await http_client.post(
+            f"{PROMPT_SERVICE_URL}/reply_mode",
+            json={"mode": patch.mode},
+            timeout=2.0,
+        )
+        return r.json()
+    except Exception as e:
+        return {"ok": False, "mode": "off", "reachable": False, "error": str(e)}
+
+
 if __name__ == "__main__":
     print("🚀 LAUNCHER — Starting...")
     uvicorn.run(app, host="0.0.0.0", port=LAUNCHER_PORT, log_level="warning")

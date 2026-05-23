@@ -417,3 +417,50 @@ wedge. In order:
   in here"). Unlikely to be a problem but worth one read-through.
 
 ---
+
+## 2026-05-21 — Situation summary + memories hallucinate hard
+
+Flagging for a dedicated investigation pass later, *not* right now.
+
+The Situation Summary block (and to a lesser extent the memory/narrative
+recall) keeps producing content that has no anchor in the sensory stream.
+Some of the off-the-wall stuff is funny on its own ("cozy apocalypse",
+"peaceful nightmare"), but the rate and severity have crossed a line — when
+viewers see it, the read is going to be **"Nami's brain is full-on schizo"**,
+not "Nami is being whimsical." That's a perception problem, not just a
+content problem.
+
+This builds on prior entries in this file:
+
+- 2026-05-17 — the "cat's fur from another dimension" fabrication (no cat
+  exists, anywhere). Already hypothesized to be memory promotion holding
+  the quip text after losing its sensory anchor.
+- 2026-05-17 — the O2 / viewership template fixation, where the summary
+  keeps reusing a stale crisis frame instead of tracking recovery.
+
+Next investigation pass should look at, in this order:
+
+1. **Situation Summary composition.** How is the summary line actually
+   assembled? Probably in
+   [director_engine/services/llm_analyst.py](../director_engine/services/llm_analyst.py)
+   or
+   [director_engine/services/prompt_constructor.py](../director_engine/services/prompt_constructor.py).
+   Does it ground on current sensory state, or just paraphrase prior
+   summaries? If it's recursively summarizing summaries, the drift is
+   structural.
+2. **Memory promotion provenance.** What conditions promote a quip into
+   narrative memory? Is there *any* provenance link back to the originating
+   sensory event, or is the promoted entry free-floating text? If
+   free-floating, it can re-surface with no grounding and the model has to
+   improvise context — which is exactly when "cat's fur" happens.
+3. **Memory retrieval semantics.** If retrieval is purely semantic
+   similarity over quip text, every "low oxygen" moment will pull the same
+   prior quip family forward — explains the viewership-template repetition.
+   Worth checking whether retrieval weights recency / sensory match at all.
+
+Provisional preference (the bias to keep in mind during the pass): bias
+toward *grounded* commentary even at the cost of less colorful summaries.
+"Slightly less funny but recognisably accurate" is a much better stream
+read than "occasionally hilarious, frequently unhinged."
+
+---

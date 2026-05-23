@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Streamer } from '../../shared/interfaces/director.interfaces';
 import { NamiStatusComponent } from '../nami-status/nami-status.component';
 import { LiveIndicatorComponent } from '../live-indicator/live-indicator.component';
+import { ReplyModeToggleComponent } from '../reply-mode-toggle/reply-mode-toggle.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, FormsModule, NamiStatusComponent, LiveIndicatorComponent],
+  imports: [CommonModule, FormsModule, NamiStatusComponent, LiveIndicatorComponent, ReplyModeToggleComponent],
   template: `
     <header class="header">
       <div class="header-top">
@@ -21,6 +22,8 @@ import { LiveIndicatorComponent } from '../live-indicator/live-indicator.compone
         <div class="pills">
           <!-- Nami gate status -->
           <app-nami-status></app-nami-status>
+
+          <app-reply-mode-toggle></app-reply-mode-toggle>
 
           <app-live-indicator></app-live-indicator>
 
