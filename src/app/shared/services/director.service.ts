@@ -91,6 +91,8 @@ export class DirectorService implements OnDestroy {
   private aiSuggestionSubject = new Subject<AiContextSuggestion>();
   public aiSuggestion$ = this.aiSuggestionSubject.asObservable();
 
+  private connectErrorLogged = false;
+
   constructor() {
     this.socket = io(environment.socketUrl, {
       transports: ['polling', 'websocket'],
@@ -106,12 +108,19 @@ export class DirectorService implements OnDestroy {
     this.socket.on('connect', () => {
       console.log('[DirectorService] Connected');
       this.connectionStatusSubject.next(true);
+      this.connectErrorLogged = false;
       // Re-push any operator-set controls so the director picks them up even
       // if the user configured them before the services were online.
       this.pushStoredControlsToDirector();
     });
     this.socket.on('disconnect', () => { console.log('[DirectorService] Disconnected'); this.connectionStatusSubject.next(false); });
-    this.socket.on('connect_error', (err) => { console.error('[DirectorService] Connection error:', err); this.connectionStatusSubject.next(false); });
+    this.socket.on('connect_error', (err) => {
+      if (!this.connectErrorLogged) {
+        console.error('[DirectorService] Connection error (suppressing repeats until reconnect):', err);
+        this.connectErrorLogged = true;
+      }
+      this.connectionStatusSubject.next(false);
+    });
 
     this.socket.on('director_state', (data: DirectorState) => this.directorStateSubject.next(data));
     this.socket.on('vision_context', (data: { context: string }) => this.visionLogSubject.next(trimLog([...this.visionLogSubject.value, data.context])));

@@ -130,7 +130,13 @@ This is a deployment topology note, not a code change. Capturing it here so
 the next time the stack gets stood up fresh, TTS goes on the right machine
 the first time.
 
-### First failure of the run — stale Gemini model in `prompt_constructor`
+### First failure of the run — stale Gemini model in `prompt_constructor` (FIXED 2026-05-23)
+
+Resolved: [prompt_constructor.py:35](../director_engine/services/prompt_constructor.py#L35) now
+uses `gemini-2.0-flash`. Leaving the investigation below as the historical
+record of the bug.
+
+
 
 ```
 [11:50:46] ⚠️ [PromptConstructor] Gemini Summarization Failed: 404
@@ -268,153 +274,6 @@ ENTRY") accurately. The audio descriptions are restrained (calling out
 silence when there's no audio, instead of fabricating — improvement over
 the pre-fix behavior described in
 [gameplan2.md](gameplan2.md)).
-
----
-
-## 2026-05-18 → 2026-05-19 — Silent freeze investigation
-
-### Symptom
-
-`director_engine` ran for 5–20 minutes then went silent. No exception, no
-crash. Log lines appeared in bursts of ~100 events all stamped with the same
-second; eventually output stopped entirely. Process stayed alive (PID present,
-launcher saw it as running). Required manual stop to recover.
-
-### Root cause — self-deadlock in `_compress_ancient`
-
-`context_compression._compress_ancient` did:
-
-```python
-with store.lock:
-    store.narrative_log = store.narrative_log[5:]
-    store.archive_ancient_history(ancient_summary)
-```
-
-and [context_store.archive_ancient_history](../director_engine/context/context_store.py#L171)
-itself does `with self.lock:`. `store.lock` was a plain `threading.Lock`, so
-the same thread re-acquiring it deadlocked instantly. Because the call ran on
-the main asyncio thread, the entire event loop wedged on `Lock.acquire()` —
-`asyncio.sleep` never woke, the reflex loop froze at `step=idle_sleep`, but
-OS threads (file-heartbeat, ThreadWatchdog) kept running because they don't
-depend on the asyncio loop.
-
-Only triggered when ancient-compression actually ran (every 300s) AND
-`narrative_log` had ≥10 entries AND the LLM returned a summary >15 chars —
-explains the 5–20 min freeze cadence.
-
-**Fix:** [context_store.py:63](../director_engine/context/context_store.py#L63) —
-`threading.Lock()` → `threading.RLock()`. RLock allows the same thread to
-re-enter, which is what the codebase's "outer takes lock, inner method also
-takes lock" pattern needs. Also defends against identical bugs across the
-other ~30 `with self.lock:` sites in `context_store`.
-
-### How we got there (the diagnostic chain)
-
-The freeze was invisible until we built tooling that survives an asyncio
-wedge. In order:
-
-1. **Burst-timestamps mystery.** First runs showed ~100 events all stamped
-   with the same second — looked like a freeze followed by a 100-iter
-   "wake-up." This was [launcher.py:_launch_proc](launcher.py) spawning the
-   child without `PYTHONUNBUFFERED=1`. Python defaults to block-buffered
-   stdout when piped. Lines accumulated in a 4–8KB child-side buffer, then
-   the launcher's read-time `time.strftime` stamped them all in one second
-   when they finally flushed. Fix: set `PYTHONUNBUFFERED=1` in the child env.
-
-2. **Write-time stamping.** Even with line-buffered output, several events
-   per second can land in the same wall-clock second. Replaced
-   `_NonBlockingWriter.write` in [main.py](../director_engine/main.py) to
-   prepend `[HH:MM:SS.mmm]` at write time. Launcher recognises pre-stamped
-   lines via regex and doesn't double-stamp. Result: timestamps reflect when
-   the engine wrote, not when the launcher read. This was the unlock for
-   trusting the logs.
-
-3. **`diagnostics/errors.log`** (new module
-   [director_engine/diagnostics.py](../director_engine/diagnostics.py)).
-   JSONL file. Captures Ollama timeouts, analyst/compressor exceptions,
-   asyncio unhandled exceptions, and uncaught thread exceptions. Survives
-   stdout-pipe stalls because it's a direct file write. For this freeze the
-   file stayed empty — confirming no exception fired, which pointed us at a
-   deadlock rather than an error path.
-
-4. **`diagnostics/stuck_dump.txt`** (the kill shot). A daemon thread in
-   [main.py:_start_stuck_detector](../director_engine/main.py) watches
-   `_reflex_state["iteration"]`. If it doesn't advance for 30s, dumps every
-   thread's Python stack via `faulthandler.dump_traceback(all_threads=True)`.
-   The dump from the freeze showed the main thread sitting at:
-
-   ```
-   context_store.py:172  archive_ancient_history
-   context_compression.py:179  _compress_ancient
-   ```
-
-   …while no other thread held the lock. That told us "self-deadlock," not
-   "contention deadlock," and the bug was obvious from the call chain.
-
-### Other fixes done along the way (not freeze-causing but discovered en route)
-
-- **Ollama timeout/concurrency tuning.** Original 15s `wait_for` was too tight
-  for the 32B-class model running on the M4 — prompts crossing ~2k tokens
-  already needed >15s, and concurrent calls compounded. Added per-caller
-  timeouts (45–60s) in [config.py](../director_engine/config.py) and a shared
-  `asyncio.Semaphore(2)` in [services/ollama_gate.py](../director_engine/services/ollama_gate.py)
-  gating all 6 Ollama call sites in `services/llm_analyst.py` and
-  `context/context_compression.py`. Eliminated the spam of `timed out after
-  15s` lines and the cascading analyse-drop pressure.
-
-- **`/context` race on `pending_memories_to_save`** in
-  [main.py](../director_engine/main.py). Iterated and cleared the list
-  without `store.lock` while `promote_to_memory` (which appends under the
-  lock) could fire concurrently. Now snapshots under the lock then awaits
-  emits outside. Not the freeze cause but the same lock family — opportunistic
-  correctness fix.
-
-- **Engine non-blocking stdout already existed** in `main.py` as
-  `_install_nonblocking_stdio` with a "drops on full pipe" wrapper. We
-  enhanced it with line-buffered write-time stamping and a `threading.Lock`
-  so writes from concurrent threads serialize cleanly.
-
-### Diagnostic toolbox left in place for next time
-
-- `director_engine/diagnostics/heartbeat.txt` — written every 5s by an OS
-  thread (`_start_file_heartbeat`, pre-existing). Snapshot of reflex state.
-  `last_iter_duration_s` frozen + ThreadWatchdog still logging = asyncio is
-  wedged but the process is alive.
-- `director_engine/diagnostics/stuck_dump.txt` — written automatically ~35s
-  after a freeze starts. Full thread stacks. **Read this first** when
-  anything hangs.
-- `director_engine/diagnostics/errors.log` — JSONL, one event per line.
-  Component, message, exception type/msg/trace, context dict.
-- `kill -SIGABRT <director_pid>` — manual faulthandler dump to stderr if the
-  freeze happens but stuck-detector hasn't fired yet.
-
-### Files changed in this investigation
-
-- `director_engine/config.py` — Ollama timeout/concurrency knobs.
-- `director_engine/services/ollama_gate.py` — new, shared semaphore.
-- `director_engine/services/llm_analyst.py` — 4 call sites gated, timeouts
-  bumped, errors logged.
-- `director_engine/context/context_compression.py` — 2 call sites gated,
-  timeouts bumped, errors logged.
-- `director_engine/context/context_store.py` — **Lock → RLock (the freeze fix)**.
-- `director_engine/main.py` — line-stamped stdout, stuck detector,
-  pending-memories race fix, asyncio/excepthook installers.
-- `director_engine/diagnostics.py` — new error-log module.
-- `director_ui/launcher.py` — `PYTHONUNBUFFERED=1` for child env,
-  pre-stamped line handling.
-
-### Open follow-ups
-
-- `OLLAMA_MODEL = 'llama3.2:latest'` in
-  [config.py](../director_engine/config.py) is not in `ollama list` (only
-  `qwen2.5:32b`, `llama3.2-vision:latest`, `nami:latest`, `nami_lora:latest`,
-  an abliterated gemma3 27B). Either pull `llama3.2` or point the config at
-  the model actually intended. A real 3B `llama3.2` would return responses
-  in <1s and make the timeout/concurrency tuning much less load-bearing.
-- Quick audit of the remaining `with self.lock:` sites in `context_store.py`
-  to confirm nothing depends on the lock being strictly non-reentrant (RLock
-  changes the semantics from "this caller is alone" to "no other *thread* is
-  in here"). Unlikely to be a problem but worth one read-through.
 
 ---
 

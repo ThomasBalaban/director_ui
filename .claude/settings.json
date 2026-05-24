@@ -48,7 +48,9 @@
       "Bash(/Users/thomasbalaban/miniconda3/envs/gemini-screen-watcher/bin/python -c ' *)",
       "Bash(/Users/thomasbalaban/miniconda3/envs/gemini-screen-watcher/bin/pip list *)",
       "Bash(system_profiler SPCameraDataType -json)",
-      "Bash(xargs ls -la)"
+      "Bash(xargs ls -la)",
+      "WebFetch(domain:developers.openai.com)",
+      "Bash(grep -nE \"\\(visionLog\\\\$|spokenLog\\\\$|audioLog\\\\$\\)\" /Users/thomasbalaban/Downloads/projects/nami-services/director_ui/src/app/shared/services/director.service.ts)"
     ],
     "additionalDirectories": [
       "/Users/thomasbalaban/Downloads/projects/nami-services/twitch_service",

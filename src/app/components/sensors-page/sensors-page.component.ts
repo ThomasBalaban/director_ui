@@ -38,6 +38,16 @@ export class SensorFeedCardComponent implements AfterViewChecked {
   private previousCount = 0;
   fmt = fmtTime;
 
+  constructor() {
+    queueMicrotask(() => {
+      console.log(
+        '%c[SensorFeedCard mounted]',
+        'background:#1e3a8a;color:#fff;padding:2px 6px;border-radius:3px;font-weight:700;',
+        this.title(),
+      );
+    });
+  }
+
   ngAfterViewChecked() {
     const currentLength = this.entries().length;
     if (currentLength !== this.previousCount) {

@@ -105,8 +105,9 @@ export class NamiStatusComponent extends PollingComponent {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       this.gateStatus.set(await res.json());
       this.offline.set(false);
-    } catch {
+    } catch (err) {
       this.offline.set(true);
+      throw err;
     }
   }
 }

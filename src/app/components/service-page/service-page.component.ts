@@ -131,12 +131,13 @@ export class ServicesPageComponent extends PollingComponent {
         this.visionActiveDeviceId.set(null);
       }
 
-    } catch {
+    } catch (err) {
       this.consecutivePollFailures += 1;
       if (this.consecutivePollFailures >= this.POLL_FAILURE_THRESHOLD) {
         this.launcherState.set('offline');
       }
       // Single transient failure: keep last known state, banner stays hidden.
+      throw err;
     } finally {
       this.loading.set(false);
     }

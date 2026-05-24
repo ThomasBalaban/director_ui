@@ -59,9 +59,10 @@ export class ServiceStatusBarComponent extends PollingComponent {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       this.services.set(await res.json());
       this.launcherOnline.set(true);
-    } catch {
+    } catch (err) {
       this.launcherOnline.set(false);
       this.services.set(FALLBACK_SERVICES);
+      throw err;
     }
   }
 }
