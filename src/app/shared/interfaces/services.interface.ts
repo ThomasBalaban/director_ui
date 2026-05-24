@@ -30,6 +30,18 @@ export const STATUS_META: Record<string, { label: string; color: string; icon: s
 
 export const GUI_SERVICES = new Set(['desktop_monitor']);
 
+// Service IDs needed for reply_only mode to function. Excludes vision,
+// stream_audio, sensory_data, event_interpreter, mic, tts, memory —
+// these are not required for a direct-address reply to land in twitch chat.
+export const REPLY_MODE_SERVICES = new Set([
+  'hub',
+  'prompt_service',
+  'director',
+  'twitch_service',
+  'nami',
+  'user_profile_service',
+]);
+
 export const VSCODE_LOGO_SVG = `
   <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:13px;height:13px;fill:currentColor;flex-shrink:0">
     <path d="M74.5 7.27L51.5 27.79 32.17 11.5 25 15.08v69.84l7.17 3.58L51.5 72.21 74.5 92.73 90 85.5V14.5L74.5 7.27zM74.5 74.08L54.07 50 74.5 25.92V74.08z"/>

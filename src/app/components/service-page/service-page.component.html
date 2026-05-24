@@ -20,6 +20,12 @@
               (click)="startAll()">
         ▶ Start All
       </button>
+      <button class="btn btn-start"
+              [disabled]="!launcherOnline() || bulkActionPending()"
+              (click)="startReplyMode()"
+              title="Start only the services needed for reply_only mode: Hub, Prompt Service, Director, Twitch, Nami, User Profile">
+        ▶ Start Reply Mode
+      </button>
       <button class="btn btn-stop"
               [disabled]="!launcherOnline() || bulkActionPending()"
               (click)="stopAll()">

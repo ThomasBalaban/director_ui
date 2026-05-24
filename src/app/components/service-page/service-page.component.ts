@@ -2,7 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { PollingComponent } from '../../shared/polling.component';
-import { ServiceDetail, AudioDevice, STATUS_META, GUI_SERVICES } from '../../shared/interfaces/services.interface';
+import { ServiceDetail, AudioDevice, STATUS_META, GUI_SERVICES, REPLY_MODE_SERVICES } from '../../shared/interfaces/services.interface';
 import { LogPanelComponent } from './log-panel/log-panel.component';
 import { DevicePickerComponent } from './device-picker/device-picker.component';
 import { DirectorService } from '../../shared/services/director.service';
@@ -322,13 +322,37 @@ export class ServicesPageComponent extends PollingComponent {
     if (!this.launcherOnline() || this.bulkActionPending()) return;
     const toStart = this.services().filter(s => s.managed && (s.status === 'offline' || s.status === 'unhealthy'));
     if (!toStart.length) return;
-    
+
     this.bulkActionPending.set(true);
     toStart.forEach(s => this.setActionPending(s.id, true));
     try {
       await Promise.all(toStart.map(svc => fetch(`/launcher/services/${svc.id}/start`, { method: 'POST' })));
-      
+
       // Force a socket reconnect shortly after bulk starting
+      setTimeout(() => this.directorService.forceReconnect(), 2500);
+
+      await this.poll();
+      setTimeout(() => this.poll(), 5000);
+    } finally {
+      toStart.forEach(s => this.setActionPending(s.id, false));
+      this.bulkActionPending.set(false);
+    }
+  }
+
+  async startReplyMode() {
+    if (!this.launcherOnline() || this.bulkActionPending()) return;
+    const toStart = this.services().filter(s =>
+      s.managed &&
+      REPLY_MODE_SERVICES.has(s.id) &&
+      (s.status === 'offline' || s.status === 'unhealthy')
+    );
+    if (!toStart.length) return;
+
+    this.bulkActionPending.set(true);
+    toStart.forEach(s => this.setActionPending(s.id, true));
+    try {
+      await Promise.all(toStart.map(svc => fetch(`/launcher/services/${svc.id}/start`, { method: 'POST' })));
+
       setTimeout(() => this.directorService.forceReconnect(), 2500);
 
       await this.poll();
