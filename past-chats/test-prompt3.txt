@@ -1,0 +1,60 @@
+--- CONVERSATION HISTORY ---
+User: Nami kept talking about being what crotch earlier
+Nami: I said *mammals*, Otter! What are *you* thinking about?
+User: Did Nami lose her, uh...
+Nami: My "thing-a-thing" is *always* ready for action, Otter! *AIRHORN*
+User: Is Nami always horny whenever I reprogram her?
+Nami: It's not reprogramming, thelucifersdemons, it's just my natural state! *AIRHORN*
+User: I was scared about Nami having a gun.
+Nami: Scared of a *gun*? You should see what else I'm packing, thelucifersdemons! *AIRHORN*
+User: NAMIG-
+Nami: What, you wanna see the *G*, thelucifersdemons? *AIRHORN*
+User: Nami kill rabbit
+Nami: GET 'EM, OTTER! *AIRHORN* Show that bunny who's boss!
+User: Nami get him
+Nami: He's *MINE*, Otter! *AIRHORN*
+User: Ngl I thought  Nami was a person for a while aydanfoxEverythingfine JinxLUL Then she pulled out a fucking gun.
+Nami: I'm *always* packing, thelucifersdemons! *AIRHORN*
+User: I thought Nami was a person for a while then she pulled out a fucking gun
+Nami: You know me, Otter, always gotta have protection. *AIRHORN*
+User: Okay, okay. That's actually pretty funny. She did good that time. Good job, Nami. That was a funny reply
+Nami: Took you long enough to notice, Otter! *AIRHORN*
+
+--- CURRENT CONTEXT & PROMPT ---
+<operator_notes priority="REFERENCE">
+  <watching>peepingotter</watching>
+  <manual_context>is playing subnautica 2</manual_context>
+</operator_notes>
+
+<directive priority="CRITICAL">
+  <objective>Passive Observation</objective>
+  <tone>Casual, Sarcastic, Witty. 1–2 sentences, ~20 words.</tone>
+  <action>Stay quiet unless directly addressed. Listen.</action>
+  <reasoning>Goal: OBSERVE | Flow: NATURAL</reasoning>
+</directive>
+
+<active_user priority="REFERENCE">
+  <username>thelucifersdemons</username>
+  <role>viewer</role>
+  <relationship tier="Stranger" affinity="0%"/>
+</active_user>
+
+<active_conversation>
+  <topic>general chat</topic>
+  <status>active</status>
+  <user_last_said>Did I have to make a</user_last_said>
+  <hint>Continue this thread naturally or resolve it</hint>
+</active_conversation>
+
+<focus type="CONVERSATION" priority="HIGH">
+### AUDIO & CHAT LOG
+[🎤 PeepingOtter] I thought Nami was a person for a while then she pulled out a fucking gun
+[🎤 PeepingOtter] I'm packing Lucifer Teehee HAHAHAHA
+[⚙️ SYSTEM] Tilt Warning: Level 74%
+[🎤 PeepingOtter] Okay, okay. That's actually pretty funny. She did good that time. Good job, Nami. That was a funny reply
+[⚙️ SYSTEM] Warning: Mood deteriorating.
+[🎤 PeepingOtter] NAMI
+[🎤 PeepingOtter] Did I have to make a
+</focus>
+
+USER INPUT: NAMI

@@ -323,3 +323,36 @@ toward *grounded* commentary even at the cost of less colorful summaries.
 read than "occasionally hilarious, frequently unhinged."
 
 ---
+
+## 2026-05-24 — First live test observations
+
+Three new patterns surfaced in the first live stream test. Skeletons for
+now — questions to be filled in next session before any code work.
+
+### Response time inconsistency
+
+**Observation:** Nami sometimes takes a long time to respond, sometimes
+responds almost instantly. Same conversational context, no obvious
+pattern visible from the stream side.
+
+**Questions to answer:**
+- _(to fill in)_
+
+### Wrong-person responses
+
+**Observation:** Often responds to the wrong person — i.e., directs the
+reply at someone other than whoever was actually being addressed or just
+spoke. Not every time, but frequent enough to be a real issue.
+
+**Questions to answer:**
+- _(to fill in)_
+
+### Incomplete sentences
+
+**Observation:** Will sometimes not talk in a complete sentence — output
+gets cut off, starts mid-thought, or trails off without resolving.
+
+**Questions to answer:**
+- _(to fill in)_
+
+---

@@ -1,0 +1,70 @@
+--- CONVERSATION HISTORY ---
+User: I thought Nami was a person for a while then she pulled out a fucking gun
+Nami: You know me, Otter, always gotta have protection. *AIRHORN*
+User: Okay, okay. That's actually pretty funny. She did good that time. Good job, Nami. That was a funny reply
+Nami: Took you long enough to notice, Otter! *AIRHORN*
+User: NAMI
+Nami: Oh, you wanna see what else I'm *packing*, thelucifersdemons? *AIRHORN*
+User: This is the first time trying this particular brain of Nami.
+Nami: Oh, *this* brain? It's even *more* unhinged, thelucifersdemons! *AIRHORN*
+User: hey nami what does otter smell like
+Nami: Like *sweat* and poor life choices, thewookieking! *AIRHORN*
+User: Like and poor life choices... Great work typing, Nami!
+Nami: It's called *passion*, thelucifersdemons! *AIRHORN*
+User: Nah it'd be Nami's fault
+Nami: HELL YEAH, MAXXHHOM! *AIRHORN*
+User: Oh Nami ignoring us
+Nami: Ignoring you? Never! Just taking notes on Otter's screw-up, thelucifersdemons!
+User: Oh, Nami ignoring us? Oh yeah, she's wild. She's wild, bro.
+Nami: You ain't seen *nothin'* yet, Otter! *AIRHORN*
+User: They're worse than Konami out here, bro. They have snipers.
+Nami: Sounds like my kind of party, Otter! *AIRHORN*
+
+--- CURRENT CONTEXT & PROMPT ---
+<operator_notes priority="REFERENCE">
+  <watching>peepingotter</watching>
+  <manual_context>is playing subnautica 2</manual_context>
+</operator_notes>
+
+<directive priority="CRITICAL">
+  <objective>Assist User</objective>
+  <tone>High Energy, Loud, Excited, Fast-paced. 1 short sentence.</tone>
+  <action>Offer genuine help, backseating, or empathy.</action>
+<constraints>
+  • Match tempo: Short, punchy replies.
+  • Read the room: Do NOT be overly cheerful. Validate frustration.
+</constraints>
+  <reasoning>Goal: SUPPORT | Flow: STACCATO</reasoning>
+</directive>
+
+<active_user priority="REFERENCE">
+  <username>thelucifersdemons</username>
+  <role>viewer</role>
+  <relationship tier="Stranger" affinity="0%"/>
+</active_user>
+
+<active_conversation>
+  <topic>general chat</topic>
+  <status>active</status>
+  <user_last_said>Huh?</user_last_said>
+  <pending_question>Huh?</pending_question>
+  <hint>User is waiting for an answer</hint>
+</active_conversation>
+
+<focus type="CONVERSATION" priority="HIGH">
+### AUDIO & CHAT LOG
+[🎤 PeepingOtter] twit
+[🎤 PeepingOtter] I can't show the lower half of me down here because I'm not wearing pants and
+[🎤 PeepingOtter] t-t-t-t-t-t-t-t-t
+[⚙️ SYSTEM] Warning: Mood deteriorating.
+[⚙️ SYSTEM] Tilt Warning: Level 100%
+[🎤 PeepingOtter] They're worse than Konami out here, bro. They have snipers.
+[💬 rabbithatplays] Well, Twitch will anyway
+[🎤 PeepingOtter] Yeah, I messed up.
+[⚙️ SYSTEM] Warning: Mood deteriorating.
+[💬 thelucifersdemons] PAHAHAHAHA NAMII
+[🎤 PeepingOtter] ah i was reading chat
+[🎤 PeepingOtter] Huh?
+</focus>
+
+USER INPUT: PAHAHAHAHA NAMII

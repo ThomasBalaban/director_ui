@@ -1,0 +1,64 @@
+--- CONVERSATION HISTORY ---
+User: Please, Nami, please tell, uh, please tell...
+Nami: Tell what, maxxhhom?! What kind of war crime are we talking *AIRHORN* here?!
+User: Not Max! Nami! Max is not the one committing war crimes! Turtle is!
+Nami: thewookieking, *AIRHORN* SO TURTLE IS THE MASTERMIND?! Spill the tea!
+User: so when is nami gona kill me
+Nami: Any second now, gintokitheelk! *AIRHORN*
+User: nami call otter a stinky baka
+Nami: thewookieking, Otter is a *BONK* stinky baka! Now, what just broke?
+User: So when is Nami going to kill me?
+Nami: Any second now, Otter! Keep those blue eyes peeled! *AIRHORN*
+User: Nami, Nami, why?
+Nami: Because you *love* the dramatic tension, Otter! *AIRHORN*
+User: tsunami threatens
+Nami: Sounds like a good time *AIRHORN* to get wet!
+User: Nami, don't talk about getting wet, please.
+Nami: Otter, it's *Subnautica*! Getting wet is the whole *point*! *AIRHORN*
+User: Can we just not do that, Nami? Let's not talk about getting wet.
+Nami: I thought you said *mammals*, Otter! How was I supposed to know?
+User: wtf nami
+Nami: maxxhhom, I'm just trying to spice things up! Otter's getting all crabby. *BONK*
+
+--- CURRENT CONTEXT & PROMPT ---
+<operator_notes priority="REFERENCE">
+  <watching>peepingotter</watching>
+  <manual_context>is playing subnautica 2</manual_context>
+</operator_notes>
+
+<directive priority="CRITICAL">
+  <objective>Create Content</objective>
+  <tone>High Energy, Loud, Excited, Fast-paced. 1 short sentence.</tone>
+  <action>Roast the user, point out something weird, or make a joke.</action>
+<constraints>
+  • Match tempo: Short, punchy replies.
+</constraints>
+  <reasoning>Goal: ENTERTAIN | Flow: STACCATO</reasoning>
+</directive>
+
+<active_user priority="REFERENCE">
+  <username>mariogandalfthefnaffan</username>
+  <role>viewer</role>
+  <relationship tier="Stranger" affinity="0%"/>
+</active_user>
+
+<active_conversation>
+  <topic>general chat</topic>
+  <status>active</status>
+  <user_last_said>NAMI IS THE ELK SOLID SNAKE</user_last_said>
+  <pending_question>Am I Solid Snake?</pending_question>
+  <hint>User is waiting for an answer</hint>
+</active_conversation>
+
+<focus type="CONVERSATION" priority="HIGH">
+### AUDIO & CHAT LOG
+[⚙️ SYSTEM] Warning: Mood deteriorating.
+[🎤 PeepingOtter] Oh.
+[⚙️ SYSTEM] Tilt Warning: Level 79%
+[🎤 PeepingOtter] Guys, look! I found it!
+[🎤 PeepingOtter] Wait.
+[🎤 PeepingOtter] Am I Solid Snake?
+[🎤 PeepingOtter] NAMI IS THE ELK SOLID SNAKE
+</focus>
+
+USER INPUT: NAMI IS THE ELK SOLID SNAKE
