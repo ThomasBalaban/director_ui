@@ -47,5 +47,10 @@
     "target": "http://localhost:8022",
     "secure": false,
     "pathRewrite": { "^/event-interpreter": "" }
+  },
+  "/testing": {
+    "target": "http://localhost:8011",
+    "secure": false,
+    "pathRewrite": { "^/testing": "" }
   }
 }

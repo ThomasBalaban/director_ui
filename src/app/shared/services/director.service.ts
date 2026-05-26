@@ -91,6 +91,10 @@ export class DirectorService implements OnDestroy {
   private aiSuggestionSubject = new Subject<AiContextSuggestion>();
   public aiSuggestion$ = this.aiSuggestionSubject.asObservable();
 
+  // === testing_engine progress events (broadcast via the hub) ===
+  private testEventSubject = new Subject<any>();
+  public testEvent$ = this.testEventSubject.asObservable();
+
   private connectErrorLogged = false;
 
   constructor() {
@@ -137,6 +141,8 @@ export class DirectorService implements OnDestroy {
       }
       this.audioLogSubject.next(trimLog(log));
     });
+
+    this.socket.on('test_event', (data: any) => this.testEventSubject.next(data));
 
     this.socket.on('twitch_message', (data: TwitchMessage) => {
       const isMention = /(nami|peepingnami)/gi.test(data.message);

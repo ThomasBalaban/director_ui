@@ -215,6 +215,16 @@ SERVICE_DEFS: Dict[str, Dict[str, Any]] = {
         "health_url":   "http://localhost:8022/health",
         "managed":      True,
     },
+    "testing_engine": {
+        "label":        "Testing Engine",
+        "description":  "Scriptable scenario runner -- injects fake twitch/mic events, scores Nami's replies",
+        "cmd":          [sys.executable, "-m", "testing_engine.server"],
+        "cwd":          PARENT_DIR,
+        "port":         8011,
+        "health_check": "http",
+        "health_url":   "http://localhost:8011/health",
+        "managed":      True,
+    },
 }
 
 BOOT_RETRIES: Dict[str, int] = {
@@ -231,4 +241,5 @@ BOOT_RETRIES: Dict[str, int] = {
     "memory_service":           40,
     "sensory_data":             30,
     "event_interpreter":        30,
+    "testing_engine":           15,
 }

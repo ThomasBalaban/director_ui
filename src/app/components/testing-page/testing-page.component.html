@@ -1,0 +1,180 @@
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <a routerLink="/" class="back-btn">← Dashboard</a>
+      <h1 class="page-title"><span class="title-icon">🧪</span> Testing Engine</h1>
+      @if (isRunning()) {
+        <span class="live-badge"><span class="live-dot"></span> RUNNING</span>
+      }
+    </div>
+    <div class="page-header-right">
+      @if (activeRun(); as r) {
+        <span class="feed-count">{{ scenarioProgressLabel(r) }}</span>
+      }
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="test-layout">
+
+      <!-- ── Left: scenarios + controls ─────────────────────────────── -->
+      <div class="test-col test-col-left">
+        <div class="card">
+          <div class="card-header">
+            <strong>Scenarios</strong>
+            <div class="card-header-actions">
+              <button class="btn btn-tiny" (click)="selectAll()">All</button>
+              <button class="btn btn-tiny" (click)="selectNone()">None</button>
+            </div>
+          </div>
+          <div class="card-body">
+            @if (scenariosError()) {
+              <div class="banner banner-warn">testing_engine offline: {{ scenariosError() }}</div>
+            }
+            @if (!scenarios().length && !scenariosError()) {
+              <div class="empty">No scenarios found.</div>
+            }
+            @for (row of rows(); track row.name) {
+              <label class="scenario-row">
+                <input type="checkbox"
+                       [checked]="row.selected"
+                       (change)="toggle(row.name)"
+                       [disabled]="isRunning()" />
+                <div class="scenario-meta">
+                  <div class="scenario-name">{{ row.name }}</div>
+                  <div class="scenario-desc">{{ row.description }}</div>
+                  <div class="scenario-tags">
+                    <span class="tag">{{ row.events }} events</span>
+                    @if (row.expect.addresses) {
+                      <span class="tag">expects → {{ row.expect.addresses }}</span>
+                    }
+                    @if (row.expect.no_reply) {
+                      <span class="tag">expects silence</span>
+                    }
+                  </div>
+                </div>
+              </label>
+            }
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body controls">
+            <button class="btn btn-primary"
+                    (click)="runSelected()"
+                    [disabled]="!hasSelection() || isRunning() || starting()">
+              Run selected
+            </button>
+            <button class="btn"
+                    (click)="runAll()"
+                    [disabled]="!scenarios().length || isRunning() || starting()">
+              Run all
+            </button>
+            <button class="btn btn-danger"
+                    (click)="stop()"
+                    [disabled]="!isRunning()">
+              Stop
+            </button>
+          </div>
+          @if (startError()) {
+            <div class="banner banner-warn">{{ startError() }}</div>
+          }
+        </div>
+
+        <div class="card">
+          <div class="card-header"><strong>Run history</strong></div>
+          <div class="card-body history-list">
+            @if (!history().length) {
+              <div class="empty">No runs yet.</div>
+            }
+            @for (h of history(); track h.id) {
+              <div class="history-item"
+                   [class.history-item--selected]="h.id === selectedRunId()"
+                   (click)="pickRun(h.id)">
+                <div class="history-id">{{ h.id }}<span *ngIf="h.active" class="tag tag-live">live</span></div>
+                <div class="history-meta">
+                  <span class="status-{{ h.status }}">{{ h.status }}</span>
+                  · {{ h.result_count }}/{{ h.scenario_count }}
+                  · {{ fmtAgo(h.started_at) }}
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Right: live log + results table ──────────────────────────── -->
+      <div class="test-col test-col-right">
+        <div class="card">
+          <div class="card-header">
+            <strong>Live progress</strong>
+            @if (selectedRun(); as r) {
+              <span class="card-header-right">run {{ r.id }} · {{ r.status }}</span>
+            }
+          </div>
+          <div class="card-body live-log">
+            @if (!selectedRun()) {
+              <div class="empty">Select a run from history, or start one.</div>
+            }
+            @for (line of liveLog(); track $index) {
+              <div class="log-line">{{ line }}</div>
+            }
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><strong>Results</strong></div>
+          <div class="card-body">
+            @if (!selectedRun() || !selectedRun()!.results.length) {
+              <div class="empty">No results yet.</div>
+            } @else {
+              <table class="results-table">
+                <thead>
+                  <tr>
+                    <th>Scenario</th>
+                    <th>Address</th>
+                    <th>Sentence</th>
+                    <th>Response time</th>
+                    <th>Replies</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (res of selectedRun()!.results; track res.scenario) {
+                    <tr>
+                      <td class="result-name">{{ res.scenario }}</td>
+                      <td>
+                        <span class="verdict" [class]="verdictClass(res.address?.verdict)" [title]="res.address?.detail">
+                          {{ res.address?.verdict ?? '—' }}
+                        </span>
+                      </td>
+                      <td>
+                        <span class="verdict" [class]="verdictClass(res.completeness?.verdict)" [title]="res.completeness?.detail">
+                          {{ res.completeness?.verdict ?? '—' }}
+                        </span>
+                      </td>
+                      <td>
+                        <span class="verdict" [class]="verdictClass(res.response_time?.verdict)" [title]="res.response_time?.detail">
+                          {{ res.response_time?.verdict ?? '—' }}
+                        </span>
+                      </td>
+                      <td class="result-replies">
+                        @if (!res.replies.length) {
+                          <span class="muted">none</span>
+                        } @else {
+                          <div *ngFor="let rep of res.replies; let i = index" class="reply-snippet">
+                            {{ rep.text }}
+                          </div>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
