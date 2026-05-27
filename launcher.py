@@ -318,6 +318,13 @@ LIVE_DRIVEN_SERVICE   = "microphone_audio_service"
 LIVE_POLL_INTERVAL_S  = 5.0
 LIVE_DEBOUNCE_S       = 6.0
 
+# Offline safety: if the streamer has been not-live for this long, shut down
+# every managed service except the ones in SAFETY_KEEP_ALIVE. Prevents runaway
+# cloud-API bills (Gemini, OpenAI Realtime, Azure TTS, Claude) when services
+# were left running unintentionally.
+OFFLINE_SAFETY_GRACE_S = 30 * 60
+SAFETY_KEEP_ALIVE      = {"hub", "twitch_service"}
+
 _live_state: Dict[str, Any] = {
     "auto_live":       False,
     "auto_reachable":  False,
@@ -326,6 +333,8 @@ _live_state: Dict[str, Any] = {
     "applied_live":    None,   # last value we actually acted on
     "pending_target":  None,   # target we're debouncing toward
     "pending_since":   0.0,
+    "offline_since":   None,   # epoch seconds we first observed offline (or None if live)
+    "safety_fired":    False,  # latch so we only log the trigger once per offline stretch
 }
 
 
@@ -387,12 +396,55 @@ async def _live_state_tick() -> None:
     _live_state["pending_target"] = None
 
 
+async def _offline_safety_enforce() -> None:
+    """Stop every running managed service except SAFETY_KEEP_ALIVE."""
+    targets = [n for n in SERVICE_DEFS if n not in SAFETY_KEEP_ALIVE and _procs_alive(n)]
+    if not targets:
+        return
+    print(f"[Safety] Stopping {len(targets)} service(s): {', '.join(targets)}")
+    results = await asyncio.gather(*(stop_service(n) for n in targets), return_exceptions=True)
+    for name, result in zip(targets, results):
+        if isinstance(result, Exception):
+            print(f"[Safety]   ❌ {name}: {result}")
+
+
+async def _offline_safety_tick() -> None:
+    # Reset clock whenever we're effectively live.
+    if _effective_live():
+        if _live_state["offline_since"] is not None or _live_state["safety_fired"]:
+            print("[Safety] Live resumed — offline timer cleared.")
+        _live_state["offline_since"] = None
+        _live_state["safety_fired"]  = False
+        return
+
+    now = time.time()
+    if _live_state["offline_since"] is None:
+        _live_state["offline_since"] = now
+        return
+
+    elapsed = now - _live_state["offline_since"]
+    if elapsed < OFFLINE_SAFETY_GRACE_S:
+        return
+
+    if not _live_state["safety_fired"]:
+        print(f"[Safety] Offline for {elapsed:.0f}s ≥ {OFFLINE_SAFETY_GRACE_S}s — enforcing keep-alive set "
+              f"({', '.join(sorted(SAFETY_KEEP_ALIVE))}).")
+        _live_state["safety_fired"] = True
+
+    # Re-enforce every tick so a service started manually while offline gets caught too.
+    await _offline_safety_enforce()
+
+
 async def _live_state_loop() -> None:
     while True:
         try:
             await _live_state_tick()
         except Exception as e:
             print(f"[Live] tick error: {e}")
+        try:
+            await _offline_safety_tick()
+        except Exception as e:
+            print(f"[Safety] tick error: {e}")
         await asyncio.sleep(LIVE_POLL_INTERVAL_S)
 
 

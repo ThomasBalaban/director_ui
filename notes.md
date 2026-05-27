@@ -356,3 +356,138 @@ gets cut off, starts mid-thought, or trails off without resolving.
 - _(to fill in)_
 
 ---
+
+## 2026-05-27 — testing_engine in place + first reproducible wrong-person bug
+
+### What now exists: the testing framework
+
+`testing_engine/` is now a real sibling project that scripts twitch + mic
+events at the hub, captures `bot_reply` events, and scores each scenario
+on three axes (address target, sentence completeness, response time)
+with Pass / Fail / Undetermined verdicts. Five seed scenarios were
+written from the
+[past-chats data](past-chats/) of a real stream segment. The framework
+ships with an HTTP server on port 8011 and a UI page at `/testing` so
+runs can be kicked off and observed from the dashboard, plus a CLI for
+headless runs.
+
+This matters because three of the four open issues from the
+[2026-05-24 entry](#2026-05-24--first-live-test-observations) — response
+time, wrong-person, incomplete sentences — are observation-only without
+a way to provoke them on demand. The framework gives us that.
+
+See [testing_engine/design.md](../testing_engine/design.md) for the
+shape and the open questions deferred for v1.
+
+### What the framework already exposed: a fix and a bug
+
+**1. `prompt_service` cooldowns were eating reply-mode replies.** The
+gate's `post_speech_cooldown` / `min_interval` / `post_response_cooldown`
+checks were originally designed to throttle proactive speech, but
+they were running in reply mode too — even though
+[`speech_gate.reply_mode_check`](../prompt_service/speech_gate.py#L133)
+has already filtered to direct-address-only by the time those checks
+run. So every event that reached `can_speak()` in reply mode was a
+legitimate reply, and the cooldowns were just suppressing them.
+
+Fix (landed 2026-05-26): in reply mode, `can_speak()` now short-circuits
+after the speaking-lock check + a 2s `REPLY_MODE_DISPATCH_BUFFER`. The
+proactive cooldowns only apply when `reply_mode == "off"`. See
+[prompt_service/speech_gate.py:151-184](../prompt_service/speech_gate.py#L151-L184).
+
+Before the fix: 2/5 scenarios got any reply. After: 4/5.
+
+**2. The wrong-person bug is now reliably reproducible.** Two
+scenarios surface it consistently across runs:
+
+- **`wrong_person_chatter_swap`** — thelucifersdemons spams 3 non-Nami
+  chat messages, then rabbithatplays @s Nami. First reply addresses
+  thelucifersdemons (wrong), second reply addresses rabbithatplays
+  (correct, but late and only sometimes captured). Real output:
+  ```
+  Thelucifersdemons: The one with the *seahorse* statues, obviously!
+  Rabbithatplays: Like desperation, *AIRHORN* cheap beer, and a *mystery* musk.
+  ```
+- **`direct_mention_to_otter`** — thelucifersdemons chats "lol that
+  timing", then Otter @s Nami via mic. Reply:
+  ```
+  Thelucifersdemons: Ooooh, *yours*? Not Otter's *BONK* messy little cave?
+  ```
+  She literally answers Otter's question while *addressing*
+  thelucifersdemons and *referring to* Otter in third person. This is
+  the same bug as in the 2026-05-24 entry — it's not a vibe, it's
+  consistent enough to chase in code.
+
+**Pattern across both:** Nami addresses whoever spoke *just before* the
+actual addresser, not the actual addresser.
+
+### The mystery: where the wrong user gets stamped in
+
+Quick first pass:
+[director_engine/core_logic.py:108-125](../director_engine/core_logic.py#L108-L125)
+sets `is_direct_address` correctly when a TWITCH_MENTION or
+DIRECT_MICROPHONE arrives, and calls
+`shared.store.set_active_user(profile)` for every event with a
+username. So by the time the @-mention from rabbithatplays lands,
+`active_user` *should* be rabbithatplays.
+
+But the reply addresses thelucifersdemons. So something downstream is
+either:
+- using a snapshot of `active_user` from before this event,
+- assembling the prompt from a "most active speaker" signal that
+  out-weights `active_user`, or
+- having the LLM pick its addressee from the conversation history block
+  rather than the `<active_user>` field, and the history is more dense
+  on whoever talked most.
+
+Candidate places to look (not yet verified — investigation pass needed):
+
+- [director_engine/services/structured_prompt_formatter.py](../director_engine/services/structured_prompt_formatter.py)
+  — what does it stamp into `<active_user>` / `<active_conversation>`?
+  Is it pulling from `shared.store.active_user` at dispatch time, or
+  from some older snapshot?
+- [director_engine/services/llm_analyst.py](../director_engine/services/llm_analyst.py)
+  — does the prompt include the full recent chat log? If so, the LLM
+  may pick its addressee by recency-of-volume rather than by the
+  explicit field.
+- Thread tracking in
+  [context_store.py](../director_engine/context/context_store.py) —
+  is there a "current conversation" / "current participant" derived
+  signal that's biased toward whoever chatted most rather than whoever
+  addressed Nami?
+- The `<focus>` block in test-prompt1.txt
+  ([past-chats/test-prompt1.txt:54-68](past-chats/test-prompt1.txt#L54-L68))
+  shows mixed mic + chat dumped chronologically. If that block is the
+  main signal the LLM uses to pick its addressee, then whoever
+  out-volumes the actual addresser wins — exactly the pattern we're
+  seeing.
+
+### The other open mystery: scenario 3's no-reply
+
+`otter_voice_then_chat` gets no reply even though maxxhhom clearly @s
+Nami. Most likely explanation is cross-scenario contamination — the
+prior scenario's reply was still being TTS'd when maxxhhom's event
+fired, so it hit `nami_speaking` and got dropped. Not a real bug in
+Nami; a framework artifact.
+
+Cheap mitigation when we come back: add a `post_scenario_pause_seconds`
+to the runner (default ~8s) and bump `reply_window_seconds` to ~20.
+Real fix would be resetting director state (memory, context, gate
+timers) between scenarios — the state-isolation question from
+[testing_engine/design.md](../testing_engine/design.md) open question #1.
+
+### Provisional next step (when picking this back up)
+
+The wrong-person bug investigation is the highest-value next move
+because:
+1. It's now reliably reproducible — every test run hits it.
+2. The fix space is contained (it's prompt construction / addressee
+   selection, not a sprawling cross-service rewrite).
+3. It's the bug the user has flagged as most jarring on-stream.
+
+Start the investigation pass with `structured_prompt_formatter.py` and
+trace how the addressee is selected by Nami. The framework can then
+verify any fix by re-running scenarios 2 and 4 and watching the
+verdicts flip from FAIL to PASS.
+
+---

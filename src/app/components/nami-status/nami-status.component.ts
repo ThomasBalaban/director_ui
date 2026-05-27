@@ -24,6 +24,9 @@ const BLOCK_REASON_LABELS: Record<string, string> = {
   min_interval:            'Min interval',
   post_response_cooldown:  'Post-response hold',
   already_reacted:         'Already reacted',
+  reply_mode_buffer:       'Reply buffer (2s)',
+  reply_mode_only:         'Reply mode: chat filtered',
+  reply_mode_no_urgent:    'Reply mode: non-urgent filtered',
 };
 
 @Component({

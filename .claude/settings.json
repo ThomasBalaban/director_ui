@@ -68,7 +68,8 @@
       "Bash(curl -s http://localhost:8011/status)",
       "Bash(curl -s -X POST -H \"Content-Type: application/json\" -d '{\"names\": [\"wrong_person_basic\"]}' http://localhost:8011/run)",
       "Bash(kill 8669)",
-      "Bash(lsof -nP -iTCP:8011 -sTCP:LISTEN)"
+      "Bash(lsof -nP -iTCP:8011 -sTCP:LISTEN)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('launcher.py'\\).read\\(\\)\\); print\\('OK'\\)\")"
     ],
     "additionalDirectories": [
       "/Users/thomasbalaban/Downloads/projects/nami-services/twitch_service",
