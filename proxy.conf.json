@@ -48,9 +48,9 @@
     "secure": false,
     "pathRewrite": { "^/event-interpreter": "" }
   },
-  "/testing": {
+  "/testing-api": {
     "target": "http://localhost:8011",
     "secure": false,
-    "pathRewrite": { "^/testing": "" }
+    "pathRewrite": { "^/testing-api": "" }
   }
 }

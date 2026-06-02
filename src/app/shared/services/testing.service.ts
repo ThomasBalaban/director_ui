@@ -87,7 +87,7 @@ export class TestingService {
     this.scenariosLoading.set(true);
     this.scenariosError.set(null);
     try {
-      const r = await fetch('/testing/scenarios');
+      const r = await fetch('/testing-api/scenarios');
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       this.scenarios.set(await r.json());
     } catch (e: any) {
@@ -100,7 +100,7 @@ export class TestingService {
 
   async loadStatus(): Promise<void> {
     try {
-      const r = await fetch('/testing/status');
+      const r = await fetch('/testing-api/status');
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = await r.json();
       this.activeRun.set(data.active);
@@ -119,7 +119,7 @@ export class TestingService {
 
   async loadHistory(): Promise<void> {
     try {
-      const r = await fetch('/testing/runs');
+      const r = await fetch('/testing-api/runs');
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       this.history.set(await r.json());
     } catch {
@@ -141,7 +141,7 @@ export class TestingService {
       return;
     }
     try {
-      const r = await fetch(`/testing/runs/${runId}`);
+      const r = await fetch(`/testing-api/runs/${runId}`);
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       this.selectedRun.set(await r.json());
       this.selectedRunError.set(null);
@@ -155,7 +155,7 @@ export class TestingService {
     this.startError.set(null);
     this.starting.set(true);
     try {
-      const r = await fetch('/testing/run', {
+      const r = await fetch('/testing-api/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ names }),
@@ -181,7 +181,7 @@ export class TestingService {
 
   async stopRun(): Promise<void> {
     try {
-      await fetch('/testing/stop', { method: 'POST' });
+      await fetch('/testing-api/stop', { method: 'POST' });
     } catch { /* silent */ }
   }
 
