@@ -333,8 +333,13 @@ _live_state: Dict[str, Any] = {
     "applied_live":    None,   # last value we actually acted on
     "pending_target":  None,   # target we're debouncing toward
     "pending_since":   0.0,
-    "offline_since":   None,   # epoch seconds we first observed offline (or None if live)
-    "safety_fired":    False,  # latch so we only log the trigger once per offline stretch
+    # Safety timer:
+    #   armed_at      = epoch when the offline countdown was last armed (None = disarmed)
+    #   safety_fired  = whether we've already enforced shutdown this stretch
+    #   prev_auto_live = previous auto_live value, for transition detection
+    "armed_at":        None,
+    "safety_fired":    False,
+    "prev_auto_live":  None,   # sentinel "no tick yet" so first tick can arm if offline
 }
 
 
@@ -409,29 +414,62 @@ async def _offline_safety_enforce() -> None:
 
 
 async def _offline_safety_tick() -> None:
-    # Reset clock whenever we're effectively live.
-    if _effective_live():
-        if _live_state["offline_since"] is not None or _live_state["safety_fired"]:
-            print("[Safety] Live resumed — offline timer cleared.")
-        _live_state["offline_since"] = None
-        _live_state["safety_fired"]  = False
-        return
+    """Drive the offline-safety timer based on transitions of auto_live.
 
+    State machine (intended behavior):
+      - Live → timer cancelled (services stay running).
+      - Offline → timer armed; fires after OFFLINE_SAFETY_GRACE_S.
+      - Live→offline transition restarts the 30-min countdown fresh.
+      - Live transition cancels any running countdown.
+      - User clicking "start reply mode" (handled in post_reply_mode below)
+        also arms the timer — that's the operator's manual handle.
+
+    We intentionally key off `auto_live` (the actual Twitch signal) so a
+    stale manual override can't silently disable the safety.
+    """
     now = time.time()
-    if _live_state["offline_since"] is None:
-        _live_state["offline_since"] = now
+    auto_live = _live_state["auto_live"]
+    prev = _live_state["prev_auto_live"]
+
+    if prev is None:
+        # First tick — establish baseline.
+        _live_state["prev_auto_live"] = auto_live
+        if not auto_live:
+            _live_state["armed_at"] = now
+            _live_state["safety_fired"] = False
+            print(f"[Safety] Offline at boot — timer armed (grace {OFFLINE_SAFETY_GRACE_S}s).")
         return
 
-    elapsed = now - _live_state["offline_since"]
+    # Transition: offline → live  ⇒  cancel timer.
+    if not prev and auto_live:
+        if _live_state["armed_at"] is not None or _live_state["safety_fired"]:
+            print("[Safety] Live — timer cancelled.")
+        _live_state["armed_at"] = None
+        _live_state["safety_fired"] = False
+
+    # Transition: live → offline  ⇒  arm timer fresh.
+    elif prev and not auto_live:
+        _live_state["armed_at"] = now
+        _live_state["safety_fired"] = False
+        print(f"[Safety] Live→offline — timer armed (grace {OFFLINE_SAFETY_GRACE_S}s).")
+
+    _live_state["prev_auto_live"] = auto_live
+
+    # Fire condition: armed, not live, grace elapsed, not yet fired.
+    if (
+        _live_state["armed_at"] is None
+        or auto_live
+        or _live_state["safety_fired"]
+    ):
+        return
+
+    elapsed = now - _live_state["armed_at"]
     if elapsed < OFFLINE_SAFETY_GRACE_S:
         return
 
-    if not _live_state["safety_fired"]:
-        print(f"[Safety] Offline for {elapsed:.0f}s ≥ {OFFLINE_SAFETY_GRACE_S}s — enforcing keep-alive set "
-              f"({', '.join(sorted(SAFETY_KEEP_ALIVE))}).")
-        _live_state["safety_fired"] = True
-
-    # Re-enforce every tick so a service started manually while offline gets caught too.
+    print(f"[Safety] Offline for {elapsed:.0f}s ≥ {OFFLINE_SAFETY_GRACE_S}s — enforcing keep-alive set "
+          f"({', '.join(sorted(SAFETY_KEEP_ALIVE))}).")
+    _live_state["safety_fired"] = True
     await _offline_safety_enforce()
 
 
@@ -580,12 +618,15 @@ async def health():
 
 def _live_state_payload() -> Dict[str, Any]:
     return {
-        "auto_live":      _live_state["auto_live"],
-        "auto_reachable": _live_state["auto_reachable"],
-        "override":       _live_state["override"],
-        "manual_live":    _live_state["manual_live"],
-        "effective_live": _effective_live(),
-        "driven_service": LIVE_DRIVEN_SERVICE,
+        "auto_live":             _live_state["auto_live"],
+        "auto_reachable":        _live_state["auto_reachable"],
+        "override":              _live_state["override"],
+        "manual_live":           _live_state["manual_live"],
+        "effective_live":        _effective_live(),
+        "driven_service":        LIVE_DRIVEN_SERVICE,
+        "armed_at":              _live_state["armed_at"],
+        "safety_fired":          _live_state["safety_fired"],
+        "safety_grace_seconds":  OFFLINE_SAFETY_GRACE_S,
     }
 
 
@@ -628,6 +669,18 @@ async def get_reply_mode():
 
 @app.post("/launcher/reply_mode")
 async def post_reply_mode(patch: ReplyModePatch):
+    # Turning reply mode back on signals active intent to use Nami. Clear
+    # any tripped offline-safety latch (and reset the offline countdown)
+    # so subsequent services the user starts aren't fought by the safety
+    # enforcer. Without this, post-stream toggles "flicker on" and die.
+    # Clicking "start reply mode" is the operator's "I'm using Nami" signal.
+    # Unconditionally (re-)arm the offline safety timer when offline, so the
+    # 30-min countdown restarts from this moment. If they're actually live,
+    # do nothing — the tick's transition logic owns the timer in that case.
+    if patch.mode != "off" and not _live_state["auto_live"]:
+        _live_state["armed_at"]     = time.time()
+        _live_state["safety_fired"] = False
+        print(f"[Safety] Reply mode → {patch.mode!r} — timer armed (grace {OFFLINE_SAFETY_GRACE_S}s).")
     try:
         r = await http_client.post(
             f"{PROMPT_SERVICE_URL}/reply_mode",

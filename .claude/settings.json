@@ -73,7 +73,8 @@
       "Bash(python -c \"from testing_engine.core import run_scenarios, run_scenario; from testing_engine.runner import main as runner_main; from testing_engine import server; print\\('imports ok'\\)\")",
       "Bash(python -c \"from testing_engine.core import run_scenarios, run_scenario; from testing_engine.runner import main as runner_main; from testing_engine import server; from testing_engine.hub_client import HubClient; h = HubClient\\(\\); h.set_reply_callback\\(None\\); print\\('imports + api ok'\\)\")",
       "Bash(/testing\" /Users/thomasbalaban/Downloads/projects/nami-services/director_ui/src/ 2>/dev/null)",
-      "Bash(grep -rn \"'/testing\\\\|\\\\\"/testing\\\\|`/testing\" /Users/thomasbalaban/Downloads/projects/nami-services/director_ui/src/ 2>/dev/null)"
+      "Bash(grep -rn \"'/testing\\\\|\\\\\"/testing\\\\|`/testing\" /Users/thomasbalaban/Downloads/projects/nami-services/director_ui/src/ 2>/dev/null)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('launcher.py'\\).read\\(\\)\\); print\\('syntax ok'\\)\")"
     ],
     "additionalDirectories": [
       "/Users/thomasbalaban/Downloads/projects/nami-services/twitch_service",
