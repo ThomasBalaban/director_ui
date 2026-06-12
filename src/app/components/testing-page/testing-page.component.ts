@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TestingService, ScenarioSummary, ScenarioResult, RunRecord } from '../../shared/services/testing.service';
 
@@ -24,7 +25,7 @@ function fmtAgo(ts: number | null | undefined): string {
 @Component({
   selector: 'app-testing-page',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './testing-page.component.html',
   styleUrl: './testing-page.component.scss',
 })
@@ -41,6 +42,22 @@ export class TestingPageComponent implements OnInit, OnDestroy {
   isRunning = this.testing.isRunning;
   startError = this.testing.startError;
   starting = this.testing.starting;
+
+  // Recording state
+  recording = this.testing.recording;
+  recordingInfo = this.testing.recordingInfo;
+  recordings = this.testing.recordings;
+  recordError = this.testing.recordError;
+  recordBusy = this.testing.recordBusy;
+  recordLabel = '';
+
+  // Ticking clock so the elapsed timer updates every second while recording.
+  private _now = signal(Date.now());
+  recElapsed = computed(() => {
+    const info = this.recordingInfo();
+    if (!this.recording() || !info?.started_at) return '00:00';
+    return this._fmtClock(Math.max(0, this._now() / 1000 - info.started_at));
+  });
 
   // Selection state (which scenario checkboxes are ticked)
   private _selection = signal<Set<string>>(new Set());
@@ -65,16 +82,25 @@ export class TestingPageComponent implements OnInit, OnDestroy {
   fmtAgo = fmtAgo;
 
   private statusPoll?: ReturnType<typeof setInterval>;
+  private clockTick?: ReturnType<typeof setInterval>;
 
   async ngOnInit() {
     await this.testing.loadScenarios();
     await this.testing.loadStatus();
-    // Cheap poll fallback: if hub disconnect drops a test_event, we still catch up
-    this.statusPoll = setInterval(() => this.testing.loadStatus(), 5000);
+    await this.testing.loadRecordStatus();
+    await this.testing.loadRecordings();
+    // Cheap poll fallback: if hub disconnect drops a test_event, we still catch up.
+    // Also refreshes the recording status + live event count.
+    this.statusPoll = setInterval(() => {
+      this.testing.loadStatus();
+      this.testing.loadRecordStatus();
+    }, 5000);
+    this.clockTick = setInterval(() => this._now.set(Date.now()), 1000);
   }
 
   ngOnDestroy() {
     if (this.statusPoll) clearInterval(this.statusPoll);
+    if (this.clockTick) clearInterval(this.clockTick);
   }
 
   // ── Selection ───────────────────────────────────────────────────────────
@@ -113,6 +139,31 @@ export class TestingPageComponent implements OnInit, OnDestroy {
 
   async pickRun(id: string) {
     await this.testing.selectRun(id);
+  }
+
+  // ── Recording controls ──────────────────────────────────────────────────
+
+  async toggleRecording() {
+    if (this.recordBusy()) return;
+    if (this.recording()) {
+      await this.testing.stopRecording();
+    } else {
+      await this.testing.startRecording(this.recordLabel.trim());
+      this.recordLabel = '';
+    }
+  }
+
+  fmtDuration(seconds: number | null | undefined): string {
+    if (seconds == null) return '—';
+    return this._fmtClock(seconds);
+  }
+
+  private _fmtClock(seconds: number): string {
+    const s = Math.floor(seconds % 60);
+    const m = Math.floor((seconds / 60) % 60);
+    const h = Math.floor(seconds / 3600);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
   }
 
   // ── Display helpers ─────────────────────────────────────────────────────

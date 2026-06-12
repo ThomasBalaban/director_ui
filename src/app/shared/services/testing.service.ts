@@ -51,6 +51,20 @@ export interface RunSummary {
   active?: boolean;
 }
 
+export interface RecordingInfo {
+  id: string;
+  label?: string;
+  path: string;
+  started_at?: number;
+  finished_at?: number | null;
+  duration_seconds?: number | null;
+  event_count?: number;
+  by_event?: Record<string, number>;
+  status: string; // recording | stopped | partial | failed
+  error?: string | null;
+  size_bytes?: number | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TestingService {
   private directorService = inject(DirectorService);
@@ -183,6 +197,79 @@ export class TestingService {
     try {
       await fetch('/testing-api/stop', { method: 'POST' });
     } catch { /* silent */ }
+  }
+
+  // ── Recording (capture a full live stream to a tape) ──────────────────────
+
+  recording = signal(false);
+  recordingInfo = signal<RecordingInfo | null>(null);
+  recordings = signal<RecordingInfo[]>([]);
+  recordError = signal<string | null>(null);
+  recordBusy = signal(false);
+
+  async loadRecordStatus(): Promise<void> {
+    try {
+      const r = await fetch('/testing-api/record/status');
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = await r.json();
+      this.recording.set(!!data.recording);
+      this.recordingInfo.set(data.recording ? data : null);
+    } catch {
+      this.recording.set(false);
+    }
+  }
+
+  async loadRecordings(): Promise<void> {
+    try {
+      const r = await fetch('/testing-api/recordings');
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      this.recordings.set(await r.json());
+    } catch {
+      this.recordings.set([]);
+    }
+  }
+
+  async startRecording(label: string): Promise<void> {
+    this.recordError.set(null);
+    this.recordBusy.set(true);
+    try {
+      const r = await fetch('/testing-api/record/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label }),
+      });
+      const body = await r.json().catch(() => ({}));
+      if (r.status === 409) {
+        this.recordError.set('A recording is already in progress');
+        await this.loadRecordStatus();
+        return;
+      }
+      if (!r.ok) {
+        this.recordError.set(body?.error ?? body?.detail ?? `HTTP ${r.status}`);
+        return;
+      }
+      this.recording.set(true);
+      this.recordingInfo.set(body);
+    } catch (e: any) {
+      this.recordError.set(e?.message ?? String(e));
+    } finally {
+      this.recordBusy.set(false);
+    }
+  }
+
+  async stopRecording(): Promise<void> {
+    this.recordError.set(null);
+    this.recordBusy.set(true);
+    try {
+      await fetch('/testing-api/record/stop', { method: 'POST' });
+    } catch (e: any) {
+      this.recordError.set(e?.message ?? String(e));
+    } finally {
+      this.recording.set(false);
+      this.recordingInfo.set(null);
+      this.recordBusy.set(false);
+      await this.loadRecordings();
+    }
   }
 
   // ── Live event handling ─────────────────────────────────────────────────

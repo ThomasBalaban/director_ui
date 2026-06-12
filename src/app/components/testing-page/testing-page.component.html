@@ -19,6 +19,57 @@
 
       <!-- ── Left: scenarios + controls ─────────────────────────────── -->
       <div class="test-col test-col-left">
+
+        <!-- ── Stream recording ──────────────────────────────────────── -->
+        <div class="card">
+          <div class="card-header">
+            <strong><span class="title-icon">⏺</span> Stream Recording</strong>
+            @if (recording()) {
+              <span class="rec-badge"><span class="rec-dot"></span> REC {{ recElapsed() }}</span>
+            }
+          </div>
+          <div class="card-body rec-body">
+            @if (recording()) {
+              <div class="rec-live">
+                <div class="rec-live-label">
+                  Recording{{ recordingInfo()?.label ? ' · ' + recordingInfo()?.label : '' }}
+                </div>
+                <div class="rec-live-meta">{{ recordingInfo()?.event_count ?? 0 }} events captured</div>
+              </div>
+              <button class="btn btn-danger rec-btn" (click)="toggleRecording()" [disabled]="recordBusy()">
+                ■ Stop recording
+              </button>
+            } @else {
+              <input class="rec-label-input" type="text" [(ngModel)]="recordLabel"
+                     placeholder="label (e.g. saints_row_night)" maxlength="48" [disabled]="recordBusy()"
+                     (keyup.enter)="toggleRecording()" />
+              <button class="btn rec-btn rec-btn-start" (click)="toggleRecording()" [disabled]="recordBusy()">
+                ⏺ Record stream
+              </button>
+            }
+            @if (recordError()) {
+              <div class="banner banner-warn">{{ recordError() }}</div>
+            }
+
+            <div class="rec-tapes">
+              <div class="rec-tapes-title">Recent tapes</div>
+              @if (!recordings().length) {
+                <div class="empty">No recordings yet.</div>
+              }
+              @for (t of recordings(); track t.id) {
+                <div class="rec-tape">
+                  <div class="rec-tape-id">{{ t.id }}</div>
+                  <div class="rec-tape-meta">
+                    <span class="status-{{ t.status }}">{{ t.status }}</span>
+                    @if (t.event_count != null) { <span>· {{ t.event_count }} events</span> }
+                    @if (t.duration_seconds != null) { <span>· {{ fmtDuration(t.duration_seconds) }}</span> }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
         <div class="card test-scenarios">
           <div class="card-header">
             <strong>Scenarios</strong>
